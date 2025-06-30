@@ -7,7 +7,64 @@
 
 import SwiftUI
 
-// MARK: - Example Usage in a SwiftUI View
+struct ThumbnailItem: View {
+    @Binding var video: VideoFile
+    
+    @StateObject private var videoProcessor = VideoProcessor()
+    
+    var body: some View {
+        let _ = print("loading view for \(video.name), videoProcessor.state: \(videoProcessor.state) thumbPath: \(video.thumbnail?.path ?? "nil")")
+        if videoProcessor.state == .processed, let path = video.thumbnail?.path {
+            let _ = print("is this gonna work for \(path)")
+            Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage()) // Load image from path
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 100, height: 100)
+                .shadow(radius: 5)
+                .onAppear {
+//                    // Automatically clean up after 10 seconds for demo purposes
+//                    // In a real app, manage cleanup based on your needs
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+//                        videoProcessor.cleanUpThumbnail()
+//                    }
+                }
+        } else if videoProcessor.state == .processing {
+            Rectangle()
+                .fill(Color.gray.opacity(0.6))
+                .frame(width: 100, height: 100)
+                .overlay(Text("Loading \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+        } else if videoProcessor.state == .failed {
+            Rectangle()
+                .fill(Color.red.opacity(0.2))
+                .frame(width: 100, height: 100)
+                .overlay(Text("Failed to load: \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+        } else {
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 100, height: 100)
+                .overlay(Text("\(video.name)").foregroundColor(.gray).frame(alignment: .center))
+                .onAppear {
+                    videoProcessor.generateThumbnail(video: $video)
+                }
+        }
+
+
+    }
+}
+
+struct ThumbnailGrid: View {
+    @Binding var pickedFiles: [VideoFile]
+    
+    var body: some View {
+        ScrollView(.vertical) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]) {
+                ForEach($pickedFiles, id: \.self) { video in
+                    ThumbnailItem(video: video)
+                }
+            }
+        }
+    }
+}
 
 struct ContentView: View {
     @State private var showDirectoryPicker = false
@@ -38,53 +95,26 @@ struct ContentView: View {
                 Text("Files in Directory (\(pickedFiles.count)):")
                     .font(.title2)
                     .padding(.top)
-                
-                // Display the list of files in a scrollable view
-                List {
-                    ForEach(pickedFiles, id: \.self) { url in
-                        Button(url.lastPathComponent) {
-                            selectedVideoURL = url.absoluteURL
-                            if (selectedVideoURL != nil) {
-                                videoProcessor.generateThumbnail(videoUrl: selectedVideoURL!)
-                            }
-                        }
-                        .disabled(videoProcessor.processingMessage.contains("Generating"))
-                    }
-                }
-                .frame(maxHeight: 300) // Limit list height to prevent excessive space
-                .border(Color.gray, width: 0.5)
+                ThumbnailGrid(pickedFiles: $pickedFiles)
+//                // Display the list of files in a scrollable view
+//                List {
+//                    ForEach(pickedFiles, id: \.self) { file in
+//                        Button(file.name) {
+//                            videoProcessor.generateThumbnail(file: file)
+//                        }
+//                        .disabled(videoProcessor.state == .processing)
+//                    }
+//                }
+//                .frame(maxHeight: 300) // Limit list height to prevent excessive space
+//                .border(Color.gray, width: 0.5)
             }
-            
-            if let path = videoProcessor.thumbnailPath {
-                Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage()) // Load image from path
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 150, height: 150)
-                    .cornerRadius(10)
-                    .shadow(radius: 5)
-                    .onAppear {
-                        // Automatically clean up after 10 seconds for demo purposes
-                        // In a real app, manage cleanup based on your needs
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-                            videoProcessor.cleanUpThumbnail()
-                        }
-                    }
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 150, height: 150)
-                    .cornerRadius(10)
-                    .overlay(Text("Thumbnail Area").foregroundColor(.gray))
-            }
-
-
         }
         .sheet(isPresented: $showDirectoryPicker) {
             DirectoryPicker(
                 onDirectoryPicked: { files in
                     self.pickedFiles = files
                     self.message = "Successfully read \(files.count) files from directory."
-                    print("Picked files: \(files.map { $0.lastPathComponent })")
+                    print("Picked files: \(files.map { $0.name })")
                 },
                 onCancelled: {
                     self.message = "Directory picker cancelled or failed."

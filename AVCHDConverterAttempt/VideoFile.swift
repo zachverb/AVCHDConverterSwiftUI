@@ -7,13 +7,23 @@
 
 import Foundation // For URL.
 
-struct VideoFile {
-    var privateUrl: URL
-    var fileName: String
+struct VideoFile: Hashable {
+    var privateURL: URL
+    var name: String
     var bookmark: Data
     var key: String
+    var uuid: UUID = UUID()
     
-    var mtsUrl: URL?
-    var convertedUrl: URL?
-    var thumbnailUrl: URL?
+    var mtsURL: URL?
+    var convertedURL: URL?
+    var thumbnail: URL?
+    
+    static func == (lhs: VideoFile, rhs: VideoFile) -> Bool {
+        return lhs.privateURL == rhs.privateURL && lhs.uuid == rhs.uuid && lhs.thumbnail == rhs.thumbnail && lhs.convertedURL == rhs.convertedURL && lhs.mtsURL == rhs.mtsURL && lhs.name == rhs.name
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(privateURL)
+        hasher.combine(uuid)
+    }
 }

@@ -17,77 +17,95 @@ enum ProcessorState {
 }
 
 class VideoProcessor: ObservableObject {
-    @Published var videoFile: VideoFile?
     @Published var state: ProcessorState = .new
 
-    func generateThumbnail(videoUrl: URL) {
+    func generateThumbnail(video: Binding<VideoFile>) {
         state = .processing
-        videoFile = nil
+        guard let bookmarkData = UserDefaults.standard.data(forKey: video.wrappedValue.key) else {
+            print("no bookmark for key: \(video.wrappedValue.key) - skipping")
+            return
+        }
+        
+        do {
+            var isStale = false
 
-        // Ensure the video URL is accessible to FFmpegKit
-        // If it's from DocumentPicker, it might be security-scoped.
-        // FFmpegKit can sometimes handle security-scoped URLs directly,
-        // but for robust access, it's safer to copy to a temporary path
-        // or ensure persistent access if needed.
-
-        // For simplicity here, let's assume videoUrl is already a file URL
-        // that FFmpegKit can directly access. If not, copy it first.
-
-        let thumbnailOutputFileName = "thumbnail_\(UUID().uuidString).jpg"
-        let tempDirectory = FileManager.default.temporaryDirectory
-        print(tempDirectory)
-        let thumbnailOutputPath = tempDirectory.appendingPathComponent(thumbnailOutputFileName)
-
-        // Define the FFmpeg command
-        // -ss 00:00:05: Seek to 5 seconds
-        // -i: Input file
-        // -frames:v 1: Output only one video frame
-        // -an: No audio
-        // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
-        // -q:v 2: JPEG quality (1=best, 31=worst)
-        let command = "-ss 00:00:05 -i \"\(videoUrl.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
-
-        print("FFmpeg command: \(command)")
-
-        FFmpegKit.executeAsync(command) { session in
-            guard let returnCode = session?.getReturnCode() else {
-                DispatchQueue.main.async {
-                    self.state = .failed
-                }
+            let directoryURL = try URL(resolvingBookmarkData: bookmarkData,
+                                        options: [], // Empty options
+                                        relativeTo: nil,
+                                        bookmarkDataIsStale: &isStale)
+            if isStale {
+                print("Warning: Bookmark for key '\(video.wrappedValue.key)' is stale. It might need to be recreated by the user.")
+                // In a real app, you would likely prompt the user to re-select the directory.
+                UserDefaults.standard.removeObject(forKey: video.wrappedValue.key) // Clear stale bookmark
                 return
             }
-
-            if ReturnCode.isSuccess(returnCode) {
-                DispatchQueue.main.async {
-                    self.videoFile = thumbnailOutputPath.path
-                    self.state = .processed
-                    print("Thumbnail saved to: \(thumbnailOutputPath.path)")
-                }
-            } else if ReturnCode.isCancel(returnCode) {
-                DispatchQueue.main.async {
-                    self.state = .new
-                }
-            } else {
-                DispatchQueue.main.async {
-                    let logs = session?.getAllLogsAsString() ?? "No logs."
-                    self.state = .failed
-                    print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
+            let didStartAccessing = directoryURL.startAccessingSecurityScopedResource()
+            defer {
+                if didStartAccessing {
+                    directoryURL.stopAccessingSecurityScopedResource()
                 }
             }
+
+            let thumbnailOutputFileName = "thumbnail_\(video.wrappedValue.name).jpg"
+            let tempDirectory = FileManager.default.temporaryDirectory
+            print(tempDirectory)
+            let thumbnailOutputPath = tempDirectory.appendingPathComponent(thumbnailOutputFileName)
+            
+            // Define the FFmpeg command
+            // -ss 00:00:05: Seek to 5 seconds
+            // -i: Input file
+            // -frames:v 1: Output only one video frame
+            // -an: No audio
+            // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
+            // -q:v 2: JPEG quality (1=best, 31=worst)
+            let command = "-y -ss 00:00:01 -i \"\(video.wrappedValue.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
+
+            print("FFmpeg command: \(command)")
+
+            FFmpegKit.executeAsync(command) { session in
+                guard let returnCode = session?.getReturnCode() else {
+                    DispatchQueue.main.async {
+                        self.state = .failed
+                    }
+                    return
+                }
+
+                if ReturnCode.isSuccess(returnCode) {
+                    DispatchQueue.main.async {
+                        print("Thumbnail saved! \(thumbnailOutputPath.path)")
+                        self.state = .processed
+                        video.wrappedValue.thumbnail = thumbnailOutputPath
+                    }
+                } else if ReturnCode.isCancel(returnCode) {
+                    DispatchQueue.main.async {
+                        self.state = .new
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        let logs = session?.getAllLogsAsString() ?? "No logs."
+                        self.state = .failed
+                        print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
+                    }
+                }
+            }
+        } catch {
+            print("Error resolving bookmark for key '\(video.wrappedValue.key)': \(error.localizedDescription)")
+            return
         }
     }
 
     // Helper function to clean up temporary files
-    func cleanUpThumbnail() {
-        if let path = videoFile {
-            let url = URL(fileURLWithPath: path)
-            do {
-                try FileManager.default.removeItem(at: url)
-                print("Cleaned up thumbnail at: \(path)")
-                videoFile = nil
-            } catch {
-                print("Error cleaning up thumbnail: \(error.localizedDescription)")
-            }
+    func cleanUpThumbnail(video: Binding<VideoFile>) {
+        if (video.wrappedValue.thumbnail == nil) {
+            return
+        }
+        let url = video.wrappedValue.thumbnail!
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("Cleaned up thumbnail at: \(video.wrappedValue.thumbnail!)")
+            video.wrappedValue.thumbnail = nil
+        } catch {
+            print("Error cleaning up thumbnail: \(error.localizedDescription)")
         }
     }
 }

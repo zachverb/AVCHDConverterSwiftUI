@@ -46,9 +46,8 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                 return
             }
 
-            // --- IMPORTANT: Start accessing the security-scoped resource ---
             let granted = directoryURL.startAccessingSecurityScopedResource()
-            defer { // Ensure stopAccessingSecurityScopedResource() is called when exiting this scope
+            defer {
                 if granted {
                     directoryURL.stopAccessingSecurityScopedResource()
                 }
@@ -59,8 +58,8 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                     let fileManager = FileManager.default
                     let contents = try fileManager.contentsOfDirectory(
                         at: directoryURL,
-                        includingPropertiesForKeys: nil, // No need for specific properties for just listing
-                        options: .skipsHiddenFiles // Skip hidden files like .DS_Store
+                        includingPropertiesForKeys: nil,
+                        options: .skipsHiddenFiles
                     )
                     
                     let bookmarkData = try directoryURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
@@ -70,28 +69,14 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                     // Filter out subdirectories if you only want files
                     let fileURLs = contents.filter { $0.isFileURL && !fileManager.isDirectory($0) }
 
-                    let tempDirectoryURL = fileManager.temporaryDirectory // Get the temp directory URL
-                    var data: [VideoFile] = []
+                    var videos: [VideoFile] = []
 
                     for fileURL in fileURLs {
-                        var fileData = VideoFile(privateUrl: fileURL, fileName: fileURL.lastPathComponent, bookmark: bookmarkData, key: bookmarkKey)
-                        data.append(fileData)
-
-                        
-//                        let destinationURL = tempDirectoryURL.appendingPathComponent(fileName)
-//                        copiedFiles.append(destinationURL)
-//
-//                        do {
-//                            try fileManager.copyItem(at: fileURL, to: destinationURL) // Copy the file
-//                            print("Copied \(fileName) to temporary directory.")
-//                            copiedFiles.append(destinationURL)
-//                        } catch {
-//                            print("Error copying file \(fileName): \(error.localizedDescription)")
-//                        }
-                        
+                        var video = VideoFile(privateURL: fileURL, name: fileURL.lastPathComponent, bookmark: bookmarkData, key: bookmarkKey)
+                        videos.append(video)
                     }
                     
-                    parent.onDirectoryPicked(data)
+                    parent.onDirectoryPicked(videos)
                 } catch {
                     print("Error reading directory contents: \(error.localizedDescription)")
                     // You might want to pass this error back or show an alert
