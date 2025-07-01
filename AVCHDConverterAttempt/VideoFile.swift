@@ -7,7 +7,7 @@
 
 import Foundation // For URL.
 
-struct VideoFile: Hashable {
+struct VideoFile: Hashable, Equatable {
     var privateURL: URL
     var name: String
     var bookmark: Data
