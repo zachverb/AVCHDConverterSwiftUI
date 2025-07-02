@@ -18,11 +18,12 @@ enum ProcessorState {
 
 class VideoProcessor: ObservableObject {
     @Published var state: ProcessorState = .new
+    @Published var sessions: [Int] = []
     
-    func executeFfmpegCommand(video: Binding<VideoFile>, command: String, callback: @escaping FFmpegSessionCompleteCallback) {
+    func executeFfmpegCommand(video: VideoFile, command: String, callback: @escaping FFmpegSessionCompleteCallback) {
         state = .processing
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.wrappedValue.key) else {
-            print("no bookmark for key: \(video.wrappedValue.key) - skipping")
+        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
+            print("no bookmark for key: \(video.key) - skipping")
             return
         }
         
@@ -34,9 +35,9 @@ class VideoProcessor: ObservableObject {
                                         relativeTo: nil,
                                         bookmarkDataIsStale: &isStale)
             if isStale {
-                print("Warning: Bookmark for key '\(video.wrappedValue.key)' is stale. It might need to be recreated by the user.")
+                print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
                 // In a real app, you would likely prompt the user to re-select the directory.
-                UserDefaults.standard.removeObject(forKey: video.wrappedValue.key) // Clear stale bookmark
+                UserDefaults.standard.removeObject(forKey: video.key) // Clear stale bookmark
                 return
             }
             let didStartAccessing = directoryURL.startAccessingSecurityScopedResource()
@@ -48,15 +49,14 @@ class VideoProcessor: ObservableObject {
 
             FFmpegKit.executeAsync(command, withCompleteCallback: callback)
         } catch {
-            print("Error resolving bookmark for key '\(video.wrappedValue.key)': \(error.localizedDescription)")
+            print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
             return
         }
     }
     
-    func executeFfprobeCommand(video: Binding<VideoFile>) {
-        state = .processing
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.wrappedValue.key) else {
-            print("no bookmark for key: \(video.wrappedValue.key) - skipping")
+    func executeFfprobeCommand(video: VideoFile) {
+        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
+            print("no bookmark for key: \(video.key) - skipping")
             return
         }
         
@@ -68,9 +68,9 @@ class VideoProcessor: ObservableObject {
                                         relativeTo: nil,
                                         bookmarkDataIsStale: &isStale)
             if isStale {
-                print("Warning: Bookmark for key '\(video.wrappedValue.key)' is stale. It might need to be recreated by the user.")
+                print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
                 // In a real app, you would likely prompt the user to re-select the directory.
-                UserDefaults.standard.removeObject(forKey: video.wrappedValue.key) // Clear stale bookmark
+                UserDefaults.standard.removeObject(forKey: video.key) // Clear stale bookmark
                 return
             }
             let didStartAccessing = directoryURL.startAccessingSecurityScopedResource()
@@ -80,50 +80,32 @@ class VideoProcessor: ObservableObject {
                 }
             }
 
-            let session = FFprobeKit.getMediaInformation(video.wrappedValue.privateURL.path)
+            let session = FFprobeKit.getMediaInformation(video.privateURL.path)
             guard let info = session?.getMediaInformation()
             else {
                 return
             }
             guard let durationString = info.getDuration(),
-                let duration = Double(durationString)
+                  let duration = Double(durationString),
+                  let videoStream: StreamInformation = info.getStreams()?.first as? StreamInformation,
+                  let properties = videoStream.getAllProperties(),
+                  let framerate = properties["avg_frame_rate"] as? String,
+                  let height = properties["height"] as? Int,
+                  let width = properties["width"] as? Int
             else {
-                print("No duration")
                 return
             }
-            print("Duration: \(duration) seconds")
-            guard let sizeString = info.getSize()
-            else {
-                print("No size")
-                return
-            }
-            print("Size: \(sizeString)")
             
-            guard let formatString = info.getFormat()
-            else {
-                print("No format")
-                return
-            }
-            print("Format: \(formatString)")
-            guard let videoStream: StreamInformation = info.getStreams()?.first as? StreamInformation
-            else {
-                print("No video???")
-                return
-            }
-            guard let properties = videoStream.getAllProperties()
-            else {
-                print("no PROPERTIES??")
-                return
-            }
-            properties.forEach { print("key: \($0) value: \($1)")}
+            let details = VideoDetails(duration: duration, height: height, width: width, framerate: framerate)
+            video.details = details
         } catch {
-            print("Error resolving bookmark for key '\(video.wrappedValue.key)': \(error.localizedDescription)")
+            print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
             return
         }
     }
 
-    func generateThumbnail(video: Binding<VideoFile>) {
-        let thumbnailOutputFileName = "thumbnail_\(video.wrappedValue.name).jpg"
+    func generateThumbnail(video: VideoFile) {
+        let thumbnailOutputFileName = "thumbnail_\(video.privateURL.deletingPathExtension().lastPathComponent).jpg"
         let tempDirectory = FileManager.default.temporaryDirectory
         let thumbnailOutputPath = tempDirectory.appendingPathComponent(thumbnailOutputFileName)
         
@@ -134,7 +116,7 @@ class VideoProcessor: ObservableObject {
         // -an: No audio
         // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
         // -q:v 2: JPEG quality (1=best, 31=worst)
-        let command = "-y -ss 00:00:01 -i \"\(video.wrappedValue.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
+        let command = "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
         
@@ -150,7 +132,7 @@ class VideoProcessor: ObservableObject {
                 DispatchQueue.main.async {
                     print("Thumbnail saved! \(thumbnailOutputPath.path)")
                     self.state = .processed
-                    video.wrappedValue.thumbnail = thumbnailOutputPath
+                    video.thumbnail = thumbnailOutputPath
                 }
             } else if ReturnCode.isCancel(returnCode) {
                 DispatchQueue.main.async {
@@ -166,16 +148,17 @@ class VideoProcessor: ObservableObject {
         }
     }
     
-    func generateConvertedMp4(video: Binding<VideoFile>) {
+    func generateConvertedMp4(video: VideoFile) {
         let tempDirectory = FileManager.default.temporaryDirectory
-        let mp4OutputFile = "converted_\(video.wrappedValue.privateURL.deletingPathExtension().lastPathComponent).mp4"
+        let mp4OutputFile = "converted_\(video.privateURL.deletingPathExtension().lastPathComponent).mp4"
         let convertedOutputPath = tempDirectory.appendingPathComponent(mp4OutputFile)
         
-        let command = "-y -i \"\(video.wrappedValue.privateURL.path)\" -c copy \"\(convertedOutputPath.path)\""
+        let command = "-y -i \"\(video.privateURL.path)\" -c copy \"\(convertedOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
         
         executeFfmpegCommand(video: video, command: command) { session in
+            session.hashValue
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
                     self.state = .failed
@@ -185,9 +168,9 @@ class VideoProcessor: ObservableObject {
 
             if ReturnCode.isSuccess(returnCode) {
                 DispatchQueue.main.async {
-                    print("video saved saved! \(convertedOutputPath.path)")
+                    print("video saved! \(convertedOutputPath.path)")
                     self.state = .processed
-                    video.wrappedValue.convertedURL = convertedOutputPath
+                    video.convertedURL = convertedOutputPath
                 }
             } else if ReturnCode.isCancel(returnCode) {
                 DispatchQueue.main.async {
@@ -203,20 +186,20 @@ class VideoProcessor: ObservableObject {
         }
     }
     
-    func parseFileInfo(video: Binding<VideoFile>) {
+    func parseFileInfo(video: VideoFile) {
         return executeFfprobeCommand(video: video)
     }
 
     // Helper function to clean up temporary files
-    func cleanUpThumbnail(video: Binding<VideoFile>) {
-        if (video.wrappedValue.thumbnail == nil) {
+    func cleanUpThumbnail(video: VideoFile) {
+        if (video.thumbnail == nil) {
             return
         }
-        let url = video.wrappedValue.thumbnail!
+        let url = video.thumbnail!
         do {
             try FileManager.default.removeItem(at: url)
-            print("Cleaned up thumbnail at: \(video.wrappedValue.thumbnail!)")
-            video.wrappedValue.thumbnail = nil
+            print("Cleaned up thumbnail at: \(video.thumbnail!)")
+            video.thumbnail = nil
         } catch {
             print("Error cleaning up thumbnail: \(error.localizedDescription)")
         }

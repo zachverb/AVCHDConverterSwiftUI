@@ -7,23 +7,55 @@
 
 import Foundation // For URL.
 
-struct VideoFile: Hashable, Equatable {
+enum LoadingURLResult {
+    case new
+    case loading(String)
+    case success(URL)
+    case failure(Error)
+}
+
+class VideoFile: ObservableObject, Equatable, Identifiable {
     var privateURL: URL
     var name: String
     var bookmark: Data
     var key: String
-    var uuid: UUID = UUID()
+    var id: UUID = UUID()
     
     var mtsURL: URL?
-    var convertedURL: URL?
-    var thumbnail: URL?
+    
+    @Published var convertedURL: URL?
+    @Published var thumbnail: URL?
+    @Published var details: VideoDetails?
+    
+    init(privateURL: URL, name: String, bookmark: Data, key: String, uuid: UUID = UUID(), mtsURL: URL? = nil, convertedURL: URL? = nil, thumbnail: URL? = nil, details: VideoDetails? = nil) {
+        self.privateURL = privateURL
+        self.name = name
+        self.bookmark = bookmark
+        self.key = key
+        self.id = uuid
+        self.mtsURL = mtsURL
+        self.convertedURL = convertedURL
+        self.thumbnail = thumbnail
+        self.details = details
+    }
     
     static func == (lhs: VideoFile, rhs: VideoFile) -> Bool {
-        return lhs.privateURL == rhs.privateURL && lhs.uuid == rhs.uuid && lhs.thumbnail == rhs.thumbnail && lhs.convertedURL == rhs.convertedURL && lhs.mtsURL == rhs.mtsURL && lhs.name == rhs.name
+        return lhs.privateURL == rhs.privateURL && lhs.id == rhs.id && lhs.thumbnail == rhs.thumbnail && lhs.convertedURL == rhs.convertedURL && lhs.mtsURL == rhs.mtsURL && lhs.name == rhs.name
     }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(privateURL)
-        hasher.combine(uuid)
+        hasher.combine(id)
+    }
+}
+
+struct VideoDetails: Equatable {
+    var duration: Double
+    var height: Int
+    var width: Int
+    var framerate: String
+    
+    static func == (lhs: VideoDetails, rhs: VideoDetails) -> Bool {
+        return lhs.duration == rhs.duration && lhs.height == rhs.height && lhs.width == rhs.width && lhs.framerate == rhs.framerate
     }
 }

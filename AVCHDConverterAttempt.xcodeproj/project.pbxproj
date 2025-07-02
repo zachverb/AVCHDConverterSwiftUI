@@ -89,9 +89,22 @@
 		0AAB44672E0BEE9C0003AA51 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0AAA5BDC2E13DDFB0006D67E /* Exceptions for "AVCHDConverterAttempt" folder in "AVCHDConverterAttempt" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0AAB44162E0BA1720003AA51 /* AVCHDConverterAttempt */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0AAB44192E0BA1720003AA51 /* AVCHDConverterAttempt */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0AAA5BDC2E13DDFB0006D67E /* Exceptions for "AVCHDConverterAttempt" folder in "AVCHDConverterAttempt" target */,
+			);
 			path = AVCHDConverterAttempt;
 			sourceTree = "<group>";
 		};
@@ -497,6 +510,8 @@
 				DEVELOPMENT_TEAM = 8673U3RF89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AVCHDConverterAttempt/Info.plist;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need this to save videos to your phone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -525,6 +540,8 @@
 				DEVELOPMENT_TEAM = 8673U3RF89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AVCHDConverterAttempt/Info.plist;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need this to save videos to your phone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

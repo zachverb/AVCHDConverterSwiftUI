@@ -11,7 +11,7 @@ import UIKit // For UIDocumentPickerViewController
 
 struct DirectoryPicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode
-    var onDirectoryPicked: ([VideoFile]) -> Void // Callback with URLs of files inside
+    var onDirectoryPicked: (String, [VideoFile]) -> Void // Callback with URLs of files inside
     var onCancelled: () -> Void // Callback for when the picker is cancelled
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
@@ -76,7 +76,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                         videos.append(video)
                     }
                     
-                    parent.onDirectoryPicked(videos)
+                    parent.onDirectoryPicked(directoryURL.lastPathComponent, videos)
                 } catch {
                     print("Error reading directory contents: \(error.localizedDescription)")
                     // You might want to pass this error back or show an alert
