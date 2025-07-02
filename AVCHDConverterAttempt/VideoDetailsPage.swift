@@ -15,6 +15,7 @@ struct VideoDetailsPage: View {
     
     @State var player: AVPlayer? = nil
     @State var isSaving: Bool = false
+    @State var isSaved: Bool = false
     @StateObject private var videoProcessor = VideoProcessor()
 
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
@@ -39,7 +40,6 @@ struct VideoDetailsPage: View {
                 PHAssetCreationRequest.creationRequestForAssetFromVideo(atFileURL: videoURL)
             } completionHandler: { success, error in
                 if let error = error {
-                    print("Error saving video: \(error)")
                     completion(false)
                 } else {
                     completion(success)
@@ -58,12 +58,12 @@ struct VideoDetailsPage: View {
                     .onAppear {
                         player.play() // Start playing once the view appears
                     }
-                Button("Save to photos") {
+                Button(isSaved ? "Video saved!" : "Save to photos") {
                     isSaving = true
                     saveVideo(videoURL: video.convertedURL!) { success in
                         isSaving = false
                     }
-                }.disabled(self.video.convertedURL == nil || isSaving)
+                }.disabled(self.video.convertedURL == nil || isSaving || isSaved)
             } else {
                 ThumbnailItem(video: video)
             }
@@ -85,15 +85,13 @@ struct VideoDetailsPage: View {
                 player = AVPlayer(url: url)
             }
         }.onChange(of: videoProcessor.state) { newValue, oldValue in
-            print("Changed!")
-            print("new value \(newValue), url: \(video.convertedURL ?? URL(string: "invalid url")!)")
             if newValue != oldValue, let url = video.convertedURL {
-                print("is this thing on")
                 player = AVPlayer(url: url)
             }
         }.onDisappear {
             player?.pause()
             player = nil
+            videoProcessor.cancelActiveSession()
         }
     }
 }

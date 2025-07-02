@@ -18,7 +18,7 @@ enum ProcessorState {
 
 class VideoProcessor: ObservableObject {
     @Published var state: ProcessorState = .new
-    @Published var sessions: [Int] = []
+    private var currentFFmpegSession: FFmpegSession?
     
     func executeFfmpegCommand(video: VideoFile, command: String, callback: @escaping FFmpegSessionCompleteCallback) {
         state = .processing
@@ -47,7 +47,7 @@ class VideoProcessor: ObservableObject {
                 }
             }
 
-            FFmpegKit.executeAsync(command, withCompleteCallback: callback)
+            self.currentFFmpegSession = FFmpegKit.executeAsync(command, withCompleteCallback: callback)
         } catch {
             print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
             return
@@ -128,18 +128,16 @@ class VideoProcessor: ObservableObject {
                 return
             }
 
-            if ReturnCode.isSuccess(returnCode) {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                self.currentFFmpegSession = nil
+                if ReturnCode.isSuccess(returnCode) {
                     print("Thumbnail saved! \(thumbnailOutputPath.path)")
                     self.state = .processed
                     video.thumbnail = thumbnailOutputPath
-                }
-            } else if ReturnCode.isCancel(returnCode) {
-                DispatchQueue.main.async {
+                } else if ReturnCode.isCancel(returnCode) {
+                    print("Cancelled session!")
                     self.state = .new
-                }
-            } else {
-                DispatchQueue.main.async {
+                } else {
                     let logs = session?.getAllLogsAsString() ?? "No logs."
                     self.state = .failed
                     print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
@@ -158,7 +156,6 @@ class VideoProcessor: ObservableObject {
         print("FFmpeg command: \(command)")
         
         executeFfmpegCommand(video: video, command: command) { session in
-            session.hashValue
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
                     self.state = .failed
@@ -166,18 +163,15 @@ class VideoProcessor: ObservableObject {
                 return
             }
 
-            if ReturnCode.isSuccess(returnCode) {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if ReturnCode.isSuccess(returnCode) {
                     print("video saved! \(convertedOutputPath.path)")
                     self.state = .processed
                     video.convertedURL = convertedOutputPath
-                }
-            } else if ReturnCode.isCancel(returnCode) {
-                DispatchQueue.main.async {
+                } else if ReturnCode.isCancel(returnCode) {
+                    print("Cancelled session!")
                     self.state = .new
-                }
-            } else {
-                DispatchQueue.main.async {
+                } else {
                     let logs = session?.getAllLogsAsString() ?? "No logs."
                     self.state = .failed
                     print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
@@ -203,5 +197,12 @@ class VideoProcessor: ObservableObject {
         } catch {
             print("Error cleaning up thumbnail: \(error.localizedDescription)")
         }
+    }
+    
+    func cancelActiveSession() {
+        if let session = currentFFmpegSession {
+            session.cancel()
+        }
+        currentFFmpegSession = nil
     }
 }

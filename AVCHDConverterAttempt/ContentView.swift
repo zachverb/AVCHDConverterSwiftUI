@@ -16,31 +16,33 @@ struct ThumbnailItem: View {
     let width = 120.0
     
     var body: some View {
-        if let path = video.thumbnail?.path {
-            Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage()) // Load image from path
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: width, height: height)
-                .shadow(radius: 5)
-        } else if videoProcessor.state == .processing {
-            Rectangle()
-                .fill(Color.gray.opacity(0.6))
-                .frame(width: width, height: height)
-                .overlay(Text("Loading \(video.name)").foregroundColor(.gray).frame(alignment: .center))
-        } else if videoProcessor.state == .failed {
-            Rectangle()
-                .fill(Color.red.opacity(0.2))
-                .frame(width: width, height: height)
-                .overlay(Text("Failed to load: \(video.name)").foregroundColor(.gray).frame(alignment: .center))
-        } else {
-            Rectangle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: width, height: height)
-                .overlay(Text("\(video.name)").foregroundColor(.gray).frame(alignment: .center))
-                .onAppear {
-                    videoProcessor.generateThumbnail(video: video)
-                }
-        }
+        Group {
+            if let path = video.thumbnail?.path {
+                Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage()) // Load image from path
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: width, height: height)
+                    .shadow(radius: 5)
+            } else if videoProcessor.state == .processing {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.6))
+                    .frame(width: width, height: height)
+                    .overlay(Text("Loading \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+            } else if videoProcessor.state == .failed {
+                Rectangle()
+                    .fill(Color.red.opacity(0.2))
+                    .frame(width: width, height: height)
+                    .overlay(Text("Failed to load: \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: width, height: height)
+                    .overlay(Text("\(video.name)").foregroundColor(.gray).frame(alignment: .center))
+                    .onAppear {
+                        videoProcessor.generateThumbnail(video: video)
+                    }
+            }
+        }.onDisappear { videoProcessor.cancelActiveSession() }
     }
 }
 
@@ -67,7 +69,6 @@ struct VideosPage: View {
     @State private var directoryName: String?
     
     @State private var selectedVideoURL: URL?
-
 
     var body: some View {
         VStack(spacing: 20) {
@@ -97,12 +98,10 @@ struct VideosPage: View {
                     self.directoryName = directoryName
                     self.pickedFiles = files
                     self.message = "Successfully read \(files.count) files from directory."
-                    print("Picked files: \(files.map { $0.name })")
                 },
                 onCancelled: {
                     self.message = "Directory picker cancelled or failed."
                     self.pickedFiles = []
-                    print("Directory picker cancelled.")
                 }
             )
         }
