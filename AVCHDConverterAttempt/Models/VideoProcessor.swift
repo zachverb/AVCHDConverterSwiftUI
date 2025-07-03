@@ -9,23 +9,18 @@ import Foundation  // For URL, FileManager
 import SwiftUI
 import ffmpegkit  // Import the main framework
 
-enum ProcessorState {
-    case new
-    case processing
-    case processed
-    case failed
-}
+@Observable class VideoProcessor {
+    private var ffmpegSessions: [UUID: FFmpegSession]
 
-class VideoProcessor: ObservableObject {
-    @Published var state: ProcessorState = .new
-    private var currentFFmpegSession: FFmpegSession?
+    init(ffmpegSessions: [UUID: FFmpegSession] = [:]) {
+        self.ffmpegSessions = ffmpegSessions
+    }
 
     func executeFfmpegCommand(
         video: VideoFile,
         command: String,
         callback: @escaping FFmpegSessionCompleteCallback
     ) {
-        state = .processing
         guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
         else {
             print("no bookmark for key: \(video.key) - skipping")
@@ -57,10 +52,16 @@ class VideoProcessor: ObservableObject {
                 }
             }
 
-            currentFFmpegSession = FFmpegKit.executeAsync(
-                command,
-                withCompleteCallback: callback
-            )
+            let currentSession = FFmpegKit.executeAsync(command) { session in
+                print("callback \(session?.description ?? "no desc")")
+                callback(session)
+            } withLogCallback: { log in
+                // Do nothing!
+            } withStatisticsCallback: { stats in
+                // Do nothing again!
+            }
+            print("Current session \(currentSession?.description ?? "no desc")")
+            ffmpegSessions[video.id] = currentSession
         } catch {
             print(
                 "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
@@ -142,7 +143,7 @@ class VideoProcessor: ObservableObject {
         )
 
         // Define the FFmpeg command
-        // -ss 00:00:05: Seek to 5 seconds
+        // -ss 00:00:01: Seek to 1 seconds
         // -i: Input file
         // -frames:v 1: Output only one video frame
         // -an: No audio
@@ -152,29 +153,27 @@ class VideoProcessor: ObservableObject {
             "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
-
+        video.thumbnail = .loading
         executeFfmpegCommand(video: video, command: command) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
-                    self.state = .failed
+                    video.thumbnail = .failed
                 }
                 return
             }
 
             DispatchQueue.main.async {
-                self.currentFFmpegSession = nil
+                self.ffmpegSessions.removeValue(forKey: video.id)
                 if ReturnCode.isSuccess(returnCode) {
                     print("Thumbnail saved! \(thumbnailOutputPath.path)")
-                    self.state = .processed
-                    video.thumbnail = thumbnailOutputPath
+                    video.thumbnail = .success(thumbnailOutputPath)
                 } else if ReturnCode.isCancel(returnCode) {
-                    print("Cancelled session!")
-                    self.state = .new
+                    print("Cancelled generating thumbnail for \(video.name)")
+                    video.thumbnail = .new
                 } else {
-                    let logs = session?.getAllLogsAsString() ?? "No logs."
-                    self.state = .failed
+                    video.thumbnail = .failed
                     print(
-                        "FFmpeg failed: \(returnCode.description), logs: \(logs)"
+                        "FFmpeg failed: \(returnCode.description)"
                     )
                 }
             }
@@ -207,11 +206,11 @@ class VideoProcessor: ObservableObject {
 
         let command = commandArgs.joined(separator: " ")
         print("FFmpeg command: \(command)")
-
+        video.convertedURL = .loading
         executeFfmpegCommand(video: video, command: command) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
-                    self.state = .failed
+                    video.convertedURL = .failed
                 }
                 return
             }
@@ -219,17 +218,13 @@ class VideoProcessor: ObservableObject {
             DispatchQueue.main.async {
                 if ReturnCode.isSuccess(returnCode) {
                     print("video saved! \(convertedOutputPath.path)")
-                    self.state = .processed
-                    video.convertedURL = convertedOutputPath
+                    video.convertedURL = .success(convertedOutputPath)
                 } else if ReturnCode.isCancel(returnCode) {
-                    print("Cancelled session!")
-                    self.state = .new
+                    print("Cancelled converting video for \(video.name)")
+                    video.convertedURL = .new
                 } else {
-                    let logs = session?.getAllLogsAsString() ?? "No logs."
-                    self.state = .failed
-                    print(
-                        "FFmpeg failed: \(returnCode.description), logs: \(logs)"
-                    )
+                    video.convertedURL = .failed
+                    print("FFmpeg failed: \(returnCode.description)")
                 }
             }
         }
@@ -240,24 +235,28 @@ class VideoProcessor: ObservableObject {
     }
 
     // Helper function to clean up temporary files
-    func cleanUpThumbnail(video: VideoFile) {
-        if video.thumbnail == nil {
-            return
+    func cleanUpFile(loadingURL: LoadingURLResult) -> LoadingURLResult {
+        if let path = loadingURL.value() {
+            do {
+                try FileManager.default.removeItem(at: path)
+                print("Cleaned up thumbnail at: \(path)")
+                return LoadingURLResult.new
+            } catch {
+                print(
+                    "Error cleaning up thumbnail: \(error.localizedDescription)"
+                )
+            }
         }
-        let url = video.thumbnail!
-        do {
-            try FileManager.default.removeItem(at: url)
-            print("Cleaned up thumbnail at: \(video.thumbnail!)")
-            video.thumbnail = nil
-        } catch {
-            print("Error cleaning up thumbnail: \(error.localizedDescription)")
-        }
+        return loadingURL
     }
 
-    func cancelActiveSession() {
-        if let session = currentFFmpegSession {
+    func cancelSessionForID(uuid: UUID) {
+        if let session = ffmpegSessions[uuid] {
+            if let command = session.getCommand() {
+                print("Cancelling running ffmpeg command: \(command)")
+            }
             session.cancel()
         }
-        currentFFmpegSession = nil
+        ffmpegSessions.removeValue(forKey: uuid)
     }
 }

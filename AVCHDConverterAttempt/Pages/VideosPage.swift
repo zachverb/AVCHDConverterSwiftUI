@@ -13,8 +13,6 @@ struct VideosPage: View {
     @State private var message: String = "No directory selected."
     @State private var directoryName: String?
 
-    @State private var selectedVideoURL: URL?
-
     var body: some View {
         VStack(spacing: 20) {
             Text(message)

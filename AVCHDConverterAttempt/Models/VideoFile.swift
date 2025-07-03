@@ -7,11 +7,20 @@
 
 import Foundation  // For URL.
 
-enum LoadingURLResult {
+enum LoadingURLResult: Equatable {
     case new
-    case loading(String)
+    case loading
     case success(URL)
-    case failure(Error)
+    case failed
+    
+    func value() -> URL? {
+        switch self {
+        case .success(let url):
+            return url
+        default:
+            return nil
+        }
+    }
 }
 
 @Observable class VideoFile: Equatable, Identifiable {
@@ -23,8 +32,8 @@ enum LoadingURLResult {
 
     var mtsURL: URL?
 
-    var convertedURL: URL?
-    var thumbnail: URL?
+    var convertedURL: LoadingURLResult
+    var thumbnail: LoadingURLResult
     var details: VideoDetails?
 
     init(
@@ -33,9 +42,9 @@ enum LoadingURLResult {
         bookmark: Data,
         key: String,
         uuid: UUID = UUID(),
+        convertedURL: LoadingURLResult = .new,
+        thumbnail: LoadingURLResult = .new,
         mtsURL: URL? = nil,
-        convertedURL: URL? = nil,
-        thumbnail: URL? = nil,
         details: VideoDetails? = nil
     ) {
         self.privateURL = privateURL

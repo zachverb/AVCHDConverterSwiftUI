@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct AVCHDConverterAttemptApp: App {
+    @State private var videoProcessor = VideoProcessor()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(videoProcessor)
         }
     }
 }

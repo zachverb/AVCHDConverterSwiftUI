@@ -11,12 +11,12 @@ import PhotosUI
 import SwiftUI
 
 struct VideoDetailsPage: View {
-    @State var video: VideoFile
+    @Bindable var video: VideoFile
 
     @State var player: AVPlayer? = nil
     @State var isSaving: Bool = false
     @State var isSaved: Bool = false
-    @StateObject private var videoProcessor = VideoProcessor()
+    @Environment(VideoProcessor.self) private var videoProcessor
 
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         PHPhotoLibrary.requestAuthorization { status in
@@ -42,6 +42,7 @@ struct VideoDetailsPage: View {
                 )
             } completionHandler: { success, error in
                 if let error = error {
+                    print(error)
                     completion(false)
                 } else {
                     completion(success)
@@ -62,11 +63,13 @@ struct VideoDetailsPage: View {
                     }
                 Button(isSaved ? "Video saved!" : "Save to photos") {
                     isSaving = true
-                    saveVideo(videoURL: video.convertedURL!) { _ in
-                        isSaving = false
+                    if let videoURL = video.convertedURL.value() {
+                        saveVideo(videoURL: videoURL) { _ in
+                            isSaving = false
+                        }
                     }
                 }.disabled(
-                    self.video.convertedURL == nil || isSaving || isSaved
+                    self.video.convertedURL == .loading || isSaving || isSaved
                 )
             } else {
                 ThumbnailItem(video: video)
@@ -83,21 +86,22 @@ struct VideoDetailsPage: View {
             Spacer()
         }.onAppear {
             if !FileManager.default.fileExists(
-                atPath: video.convertedURL?.path ?? ""
+                atPath: video.convertedURL.value()?.path ?? ""
             ) {
                 videoProcessor.generateConvertedMp4(video: video)
                 videoProcessor.parseFileInfo(video: video)
-            } else if let url = video.convertedURL {
+            } else if let url = video.convertedURL.value() {
                 player = AVPlayer(url: url)
             }
-        }.onChange(of: videoProcessor.state) { newValue, oldValue in
-            if newValue != oldValue, let url = video.convertedURL {
+        }.onChange(of: video.convertedURL) { newValue, oldValue in
+            if newValue != oldValue, let url = video.convertedURL.value() {
                 player = AVPlayer(url: url)
             }
         }.onDisappear {
+            print("on disappear!")
             player?.pause()
             player = nil
-            videoProcessor.cancelActiveSession()
+            videoProcessor.cancelSessionForID(uuid: video.id)
         }
     }
 }
