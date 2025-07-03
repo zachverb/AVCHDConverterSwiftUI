@@ -5,9 +5,9 @@
 //  Created by Zachary Verbeck on 6/25/25.
 //
 
-import SwiftUI
 import ffmpegkit // Import the main framework
 import Foundation // For URL, FileManager
+import SwiftUI
 
 enum ProcessorState {
     case new
@@ -19,21 +19,21 @@ enum ProcessorState {
 class VideoProcessor: ObservableObject {
     @Published var state: ProcessorState = .new
     private var currentFFmpegSession: FFmpegSession?
-    
+
     func executeFfmpegCommand(video: VideoFile, command: String, callback: @escaping FFmpegSessionCompleteCallback) {
         state = .processing
         guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
             print("no bookmark for key: \(video.key) - skipping")
             return
         }
-        
+
         do {
             var isStale = false
 
             let directoryURL = try URL(resolvingBookmarkData: bookmarkData,
-                                        options: [], // Empty options
-                                        relativeTo: nil,
-                                        bookmarkDataIsStale: &isStale)
+                                       options: [], // Empty options
+                                       relativeTo: nil,
+                                       bookmarkDataIsStale: &isStale)
             if isStale {
                 print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
                 // In a real app, you would likely prompt the user to re-select the directory.
@@ -47,26 +47,26 @@ class VideoProcessor: ObservableObject {
                 }
             }
 
-            self.currentFFmpegSession = FFmpegKit.executeAsync(command, withCompleteCallback: callback)
+            currentFFmpegSession = FFmpegKit.executeAsync(command, withCompleteCallback: callback)
         } catch {
             print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
             return
         }
     }
-    
+
     func executeFfprobeCommand(video: VideoFile) {
         guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
             print("no bookmark for key: \(video.key) - skipping")
             return
         }
-        
+
         do {
             var isStale = false
 
             let directoryURL = try URL(resolvingBookmarkData: bookmarkData,
-                                        options: [], // Empty options
-                                        relativeTo: nil,
-                                        bookmarkDataIsStale: &isStale)
+                                       options: [], // Empty options
+                                       relativeTo: nil,
+                                       bookmarkDataIsStale: &isStale)
             if isStale {
                 print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
                 // In a real app, you would likely prompt the user to re-select the directory.
@@ -95,7 +95,7 @@ class VideoProcessor: ObservableObject {
             else {
                 return
             }
-            
+
             let details = VideoDetails(duration: duration, height: height, width: width, framerate: framerate)
             video.details = details
         } catch {
@@ -108,7 +108,7 @@ class VideoProcessor: ObservableObject {
         let thumbnailOutputFileName = "thumbnail_\(video.privateURL.deletingPathExtension().lastPathComponent).jpg"
         let tempDirectory = FileManager.default.temporaryDirectory
         let thumbnailOutputPath = tempDirectory.appendingPathComponent(thumbnailOutputFileName)
-        
+
         // Define the FFmpeg command
         // -ss 00:00:05: Seek to 5 seconds
         // -i: Input file
@@ -119,7 +119,7 @@ class VideoProcessor: ObservableObject {
         let command = "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
-        
+
         executeFfmpegCommand(video: video, command: command) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
@@ -145,16 +145,31 @@ class VideoProcessor: ObservableObject {
             }
         }
     }
-    
+
     func generateConvertedMp4(video: VideoFile) {
         let tempDirectory = FileManager.default.temporaryDirectory
         let mp4OutputFile = "converted_\(video.privateURL.deletingPathExtension().lastPathComponent).mp4"
         let convertedOutputPath = tempDirectory.appendingPathComponent(mp4OutputFile)
-        
-        let command = "-y -i \"\(video.privateURL.path)\" -c copy \"\(convertedOutputPath.path)\""
+        parseFileInfo(video: video)
 
+        var commandArgs = [
+            "-y",
+            "-i", video.privateURL.path,
+            "-c:v", "copy",
+            "-c:a", "copy",
+            "-f", "mp4",
+            "-vsync", "2",
+        ]
+
+        if let framerate = video.details?.framerate {
+            commandArgs.append(contentsOf: ["-r", String(framerate)])
+        }
+
+        commandArgs.append(convertedOutputPath.path)
+
+        let command = commandArgs.joined(separator: " ")
         print("FFmpeg command: \(command)")
-        
+
         executeFfmpegCommand(video: video, command: command) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
@@ -179,14 +194,14 @@ class VideoProcessor: ObservableObject {
             }
         }
     }
-    
+
     func parseFileInfo(video: VideoFile) {
         return executeFfprobeCommand(video: video)
     }
 
     // Helper function to clean up temporary files
     func cleanUpThumbnail(video: VideoFile) {
-        if (video.thumbnail == nil) {
+        if video.thumbnail == nil {
             return
         }
         let url = video.thumbnail!
@@ -198,7 +213,7 @@ class VideoProcessor: ObservableObject {
             print("Error cleaning up thumbnail: \(error.localizedDescription)")
         }
     }
-    
+
     func cancelActiveSession() {
         if let session = currentFFmpegSession {
             session.cancel()

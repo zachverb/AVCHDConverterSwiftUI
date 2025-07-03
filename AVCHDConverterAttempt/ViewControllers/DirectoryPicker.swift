@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers // For UTType.folder
 import UIKit // For UIDocumentPickerViewController
+import UniformTypeIdentifiers // For UTType.folder
 
 struct DirectoryPicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode
@@ -22,7 +22,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+    func updateUIViewController(_: UIDocumentPickerViewController, context _: Context) {
         // No updates needed for the picker once it's presented
     }
 
@@ -39,7 +39,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let directoryURL = urls.first else {
                 parent.onCancelled() // No URL picked, treat as cancelled
                 parent.presentationMode.wrappedValue.dismiss()
@@ -61,7 +61,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                         includingPropertiesForKeys: nil,
                         options: .skipsHiddenFiles
                     )
-                    
+
                     let bookmarkData = try directoryURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
                     let bookmarkKey = "directoryBookmark_\(directoryURL.lastPathComponent)"
                     UserDefaults.standard.set(bookmarkData, forKey: bookmarkKey)
@@ -72,10 +72,10 @@ struct DirectoryPicker: UIViewControllerRepresentable {
                     var videos: [VideoFile] = []
 
                     for fileURL in fileURLs {
-                        var video = VideoFile(privateURL: fileURL, name: fileURL.lastPathComponent, bookmark: bookmarkData, key: bookmarkKey)
+                        let video = VideoFile(privateURL: fileURL, name: fileURL.lastPathComponent, bookmark: bookmarkData, key: bookmarkKey)
                         videos.append(video)
                     }
-                    
+
                     parent.onDirectoryPicked(directoryURL.lastPathComponent, videos)
                 } catch {
                     print("Error reading directory contents: \(error.localizedDescription)")
@@ -91,7 +91,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
             parent.presentationMode.wrappedValue.dismiss()
         }
 
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        func documentPickerWasCancelled(_: UIDocumentPickerViewController) {
             parent.onCancelled()
             parent.presentationMode.wrappedValue.dismiss()
         }
@@ -103,7 +103,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
 extension FileManager {
     func isDirectory(_ url: URL) -> Bool {
         var isDir: ObjCBool = false
-        self.fileExists(atPath: url.path, isDirectory: &isDir)
+        fileExists(atPath: url.path, isDirectory: &isDir)
         return isDir.boolValue
     }
 }

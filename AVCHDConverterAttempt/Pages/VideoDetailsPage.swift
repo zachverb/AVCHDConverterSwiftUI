@@ -5,14 +5,14 @@
 //  Created by Zachary Verbeck on 6/30/25.
 //
 
-import SwiftUI
 import AVKit
 import Photos
 import PhotosUI
+import SwiftUI
 
 struct VideoDetailsPage: View {
-    @ObservedObject var video: VideoFile
-    
+    @State var video: VideoFile
+
     @State var player: AVPlayer? = nil
     @State var isSaving: Bool = false
     @State var isSaved: Bool = false
@@ -60,7 +60,7 @@ struct VideoDetailsPage: View {
                     }
                 Button(isSaved ? "Video saved!" : "Save to photos") {
                     isSaving = true
-                    saveVideo(videoURL: video.convertedURL!) { success in
+                    saveVideo(videoURL: video.convertedURL!) { _ in
                         isSaving = false
                     }
                 }.disabled(self.video.convertedURL == nil || isSaving || isSaved)
@@ -78,7 +78,7 @@ struct VideoDetailsPage: View {
             }
             Spacer()
         }.onAppear {
-            if (!FileManager.default.fileExists(atPath: video.convertedURL?.path ?? "")) {
+            if !FileManager.default.fileExists(atPath: video.convertedURL?.path ?? "") {
                 videoProcessor.generateConvertedMp4(video: video)
                 videoProcessor.parseFileInfo(video: video)
             } else if let url = video.convertedURL {
