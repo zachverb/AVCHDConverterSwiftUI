@@ -18,7 +18,7 @@ struct ThumbnailItem: View {
     var body: some View {
         Group {
             if let path = video.thumbnail?.path {
-                Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage()) // Load image from path
+                Image(uiImage: UIImage(contentsOfFile: path) ?? UIImage())  // Load image from path
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: width, height: height)
@@ -27,17 +27,28 @@ struct ThumbnailItem: View {
                 Rectangle()
                     .fill(Color.gray.opacity(0.6))
                     .frame(width: width, height: height)
-                    .overlay(Text("Loading \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+                    .overlay(
+                        Text("Loading \(video.name)").foregroundColor(.gray)
+                            .frame(alignment: .center)
+                    )
             } else if videoProcessor.state == .failed {
                 Rectangle()
                     .fill(Color.red.opacity(0.2))
                     .frame(width: width, height: height)
-                    .overlay(Text("Failed to load: \(video.name)").foregroundColor(.gray).frame(alignment: .center))
+                    .overlay(
+                        Text("Failed to load: \(video.name)").foregroundColor(
+                            .gray
+                        ).frame(alignment: .center)
+                    )
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
                     .frame(width: width, height: height)
-                    .overlay(Text("\(video.name)").foregroundColor(.gray).frame(alignment: .center))
+                    .overlay(
+                        Text("\(video.name)").foregroundColor(.gray).frame(
+                            alignment: .center
+                        )
+                    )
                     .onAppear {
                         videoProcessor.generateThumbnail(video: video)
                     }
@@ -45,4 +56,3 @@ struct ThumbnailItem: View {
         }.onDisappear { videoProcessor.cancelActiveSession() }
     }
 }
-

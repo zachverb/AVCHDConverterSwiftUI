@@ -37,7 +37,9 @@ struct VideoDetailsPage: View {
             }
 
             PHPhotoLibrary.shared().performChanges {
-                PHAssetCreationRequest.creationRequestForAssetFromVideo(atFileURL: videoURL)
+                PHAssetCreationRequest.creationRequestForAssetFromVideo(
+                    atFileURL: videoURL
+                )
             } completionHandler: { success, error in
                 if let error = error {
                     completion(false)
@@ -52,18 +54,20 @@ struct VideoDetailsPage: View {
         VStack {
             Text(video.name)
                 .font(.headline)
-            if let player = player { // Safely unwrap player before using it
+            if let player = player {  // Safely unwrap player before using it
                 VideoPlayer(player: player)
                     .aspectRatio(1.778, contentMode: .fit)
                     .onAppear {
-                        player.play() // Start playing once the view appears
+                        player.play()  // Start playing once the view appears
                     }
                 Button(isSaved ? "Video saved!" : "Save to photos") {
                     isSaving = true
                     saveVideo(videoURL: video.convertedURL!) { _ in
                         isSaving = false
                     }
-                }.disabled(self.video.convertedURL == nil || isSaving || isSaved)
+                }.disabled(
+                    self.video.convertedURL == nil || isSaving || isSaved
+                )
             } else {
                 ThumbnailItem(video: video)
             }
@@ -78,7 +82,9 @@ struct VideoDetailsPage: View {
             }
             Spacer()
         }.onAppear {
-            if !FileManager.default.fileExists(atPath: video.convertedURL?.path ?? "") {
+            if !FileManager.default.fileExists(
+                atPath: video.convertedURL?.path ?? ""
+            ) {
                 videoProcessor.generateConvertedMp4(video: video)
                 videoProcessor.parseFileInfo(video: video)
             } else if let url = video.convertedURL {

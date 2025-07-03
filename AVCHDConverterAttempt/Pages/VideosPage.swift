@@ -29,9 +29,11 @@ struct VideosPage: View {
             .tint(.green)
 
             if pickedFiles.count > 0 {
-                Text("Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):")
-                    .font(.title2)
-                    .padding(.top)
+                Text(
+                    "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
+                )
+                .font(.title2)
+                .padding(.top)
                 ThumbnailGrid(pickedFiles: $pickedFiles)
             } else {
                 Spacer()
@@ -42,7 +44,8 @@ struct VideosPage: View {
                 onDirectoryPicked: { directoryName, files in
                     self.directoryName = directoryName
                     self.pickedFiles = files
-                    self.message = "Successfully read \(files.count) files from directory."
+                    self.message =
+                        "Successfully read \(files.count) files from directory."
                 },
                 onCancelled: {
                     self.message = "Directory picker cancelled or failed."

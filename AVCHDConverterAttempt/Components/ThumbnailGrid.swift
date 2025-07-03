@@ -12,9 +12,13 @@ struct ThumbnailGrid: View {
 
     var body: some View {
         ScrollView(.vertical) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]) {
+            LazyVGrid(columns: [
+                GridItem(.flexible()), GridItem(.flexible()),
+                GridItem(.flexible()),
+            ]) {
                 ForEach($pickedFiles) { $video in
-                    NavigationLink(destination: VideoDetailsPage(video: video)) {
+                    NavigationLink(destination: VideoDetailsPage(video: video))
+                    {
                         ThumbnailItem(video: video)
                     }
                 }
@@ -22,4 +26,3 @@ struct ThumbnailGrid: View {
         }
     }
 }
-

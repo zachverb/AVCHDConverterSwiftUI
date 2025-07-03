@@ -5,9 +5,9 @@
 //  Created by Zachary Verbeck on 6/25/25.
 //
 
-import ffmpegkit // Import the main framework
-import Foundation // For URL, FileManager
+import Foundation  // For URL, FileManager
 import SwiftUI
+import ffmpegkit  // Import the main framework
 
 enum ProcessorState {
     case new
@@ -20,9 +20,14 @@ class VideoProcessor: ObservableObject {
     @Published var state: ProcessorState = .new
     private var currentFFmpegSession: FFmpegSession?
 
-    func executeFfmpegCommand(video: VideoFile, command: String, callback: @escaping FFmpegSessionCompleteCallback) {
+    func executeFfmpegCommand(
+        video: VideoFile,
+        command: String,
+        callback: @escaping FFmpegSessionCompleteCallback
+    ) {
         state = .processing
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
+        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
+        else {
             print("no bookmark for key: \(video.key) - skipping")
             return
         }
@@ -30,32 +35,43 @@ class VideoProcessor: ObservableObject {
         do {
             var isStale = false
 
-            let directoryURL = try URL(resolvingBookmarkData: bookmarkData,
-                                       options: [], // Empty options
-                                       relativeTo: nil,
-                                       bookmarkDataIsStale: &isStale)
+            let directoryURL = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: [],  // Empty options
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
             if isStale {
-                print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
+                print(
+                    "Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user."
+                )
                 // In a real app, you would likely prompt the user to re-select the directory.
-                UserDefaults.standard.removeObject(forKey: video.key) // Clear stale bookmark
+                UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
                 return
             }
-            let didStartAccessing = directoryURL.startAccessingSecurityScopedResource()
+            let didStartAccessing =
+                directoryURL.startAccessingSecurityScopedResource()
             defer {
                 if didStartAccessing {
                     directoryURL.stopAccessingSecurityScopedResource()
                 }
             }
 
-            currentFFmpegSession = FFmpegKit.executeAsync(command, withCompleteCallback: callback)
+            currentFFmpegSession = FFmpegKit.executeAsync(
+                command,
+                withCompleteCallback: callback
+            )
         } catch {
-            print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
+            print(
+                "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
+            )
             return
         }
     }
 
     func executeFfprobeCommand(video: VideoFile) {
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key) else {
+        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
+        else {
             print("no bookmark for key: \(video.key) - skipping")
             return
         }
@@ -63,17 +79,22 @@ class VideoProcessor: ObservableObject {
         do {
             var isStale = false
 
-            let directoryURL = try URL(resolvingBookmarkData: bookmarkData,
-                                       options: [], // Empty options
-                                       relativeTo: nil,
-                                       bookmarkDataIsStale: &isStale)
+            let directoryURL = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: [],  // Empty options
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
             if isStale {
-                print("Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user.")
+                print(
+                    "Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user."
+                )
                 // In a real app, you would likely prompt the user to re-select the directory.
-                UserDefaults.standard.removeObject(forKey: video.key) // Clear stale bookmark
+                UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
                 return
             }
-            let didStartAccessing = directoryURL.startAccessingSecurityScopedResource()
+            let didStartAccessing =
+                directoryURL.startAccessingSecurityScopedResource()
             defer {
                 if didStartAccessing {
                     directoryURL.stopAccessingSecurityScopedResource()
@@ -86,28 +107,39 @@ class VideoProcessor: ObservableObject {
                 return
             }
             guard let durationString = info.getDuration(),
-                  let duration = Double(durationString),
-                  let videoStream: StreamInformation = info.getStreams()?.first as? StreamInformation,
-                  let properties = videoStream.getAllProperties(),
-                  let framerate = properties["avg_frame_rate"] as? String,
-                  let height = properties["height"] as? Int,
-                  let width = properties["width"] as? Int
+                let duration = Double(durationString),
+                let videoStream: StreamInformation = info.getStreams()?.first
+                    as? StreamInformation,
+                let properties = videoStream.getAllProperties(),
+                let framerate = properties["avg_frame_rate"] as? String,
+                let height = properties["height"] as? Int,
+                let width = properties["width"] as? Int
             else {
                 return
             }
 
-            let details = VideoDetails(duration: duration, height: height, width: width, framerate: framerate)
+            let details = VideoDetails(
+                duration: duration,
+                height: height,
+                width: width,
+                framerate: framerate
+            )
             video.details = details
         } catch {
-            print("Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)")
+            print(
+                "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
+            )
             return
         }
     }
 
     func generateThumbnail(video: VideoFile) {
-        let thumbnailOutputFileName = "thumbnail_\(video.privateURL.deletingPathExtension().lastPathComponent).jpg"
+        let thumbnailOutputFileName =
+            "thumbnail_\(video.privateURL.deletingPathExtension().lastPathComponent).jpg"
         let tempDirectory = FileManager.default.temporaryDirectory
-        let thumbnailOutputPath = tempDirectory.appendingPathComponent(thumbnailOutputFileName)
+        let thumbnailOutputPath = tempDirectory.appendingPathComponent(
+            thumbnailOutputFileName
+        )
 
         // Define the FFmpeg command
         // -ss 00:00:05: Seek to 5 seconds
@@ -116,7 +148,8 @@ class VideoProcessor: ObservableObject {
         // -an: No audio
         // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
         // -q:v 2: JPEG quality (1=best, 31=worst)
-        let command = "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
+        let command =
+            "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
 
@@ -140,7 +173,9 @@ class VideoProcessor: ObservableObject {
                 } else {
                     let logs = session?.getAllLogsAsString() ?? "No logs."
                     self.state = .failed
-                    print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
+                    print(
+                        "FFmpeg failed: \(returnCode.description), logs: \(logs)"
+                    )
                 }
             }
         }
@@ -148,8 +183,11 @@ class VideoProcessor: ObservableObject {
 
     func generateConvertedMp4(video: VideoFile) {
         let tempDirectory = FileManager.default.temporaryDirectory
-        let mp4OutputFile = "converted_\(video.privateURL.deletingPathExtension().lastPathComponent).mp4"
-        let convertedOutputPath = tempDirectory.appendingPathComponent(mp4OutputFile)
+        let mp4OutputFile =
+            "converted_\(video.privateURL.deletingPathExtension().lastPathComponent).mp4"
+        let convertedOutputPath = tempDirectory.appendingPathComponent(
+            mp4OutputFile
+        )
         parseFileInfo(video: video)
 
         var commandArgs = [
@@ -189,7 +227,9 @@ class VideoProcessor: ObservableObject {
                 } else {
                     let logs = session?.getAllLogsAsString() ?? "No logs."
                     self.state = .failed
-                    print("FFmpeg failed: \(returnCode.description), logs: \(logs)")
+                    print(
+                        "FFmpeg failed: \(returnCode.description), logs: \(logs)"
+                    )
                 }
             }
         }
