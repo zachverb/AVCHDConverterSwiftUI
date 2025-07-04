@@ -15,7 +15,8 @@ import ffmpegkit  // Import the main framework
     private let stateLock = NSLock()
     private let queue = DispatchQueue(
         label: "com.zacharyverbeck.AVCHDConverterAttempt.VideoProcessor",
-        attributes: .concurrent
+        qos: .userInitiated,
+        attributes: .concurrent,
     )
     private let semaphore = DispatchSemaphore(value: 1)
 
@@ -79,6 +80,7 @@ import ffmpegkit  // Import the main framework
                 }
 
                 if task.isCancelled {
+                    callback(FFmpegSession.create([]))
                     return
                 }
 
@@ -191,7 +193,7 @@ import ffmpegkit  // Import the main framework
         ) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
-                    video.thumbnail = .failed
+                    video.thumbnail = .new
                 }
                 return
             }
@@ -249,7 +251,7 @@ import ffmpegkit  // Import the main framework
             guard let returnCode = session?.getReturnCode() else {
                 print("no return code??")
                 DispatchQueue.main.async {
-                    video.convertedURL = .failed
+                    video.convertedURL = .new
                 }
                 return
             }
