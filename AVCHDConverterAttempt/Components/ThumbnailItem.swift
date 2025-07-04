@@ -29,25 +29,33 @@ struct ThumbnailItem: View {
                 .shadow(radius: 5)
             case .loading:
                 Rectangle()
-                    .fill(Color.gray.opacity(0.6))
+                    .fill(Color.gray.opacity(0.1))
                     .frame(width: width, height: height)
                     .overlay(
                         VStack {
                             ProgressView()
-                            Text("Loading \(video.name)").foregroundColor(.gray)
-                                .frame(alignment: .center)
+                                .opacity(0.3)
+                            Text(video.name).foregroundColor(
+                                Color.gray.opacity(0.3)
+                            )
+                            .frame(alignment: .center)
                         }
                     )
             case .failed:
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
-                    .font(.largeTitle)
+                Rectangle()
+                    .foregroundColor(.red.opacity(0.3))
                     .frame(width: width, height: height)
                     .overlay(
-                        Text("Failed to load: \(video.name)").foregroundColor(
-                            .gray
-                        ).frame(alignment: .center)
-                    )
+                        VStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.red.opacity(0.7))
+                            Text(video.name).foregroundColor(
+                                .red
+                            )
+                        }
+                    ).frame(alignment: .center)
+
             case .new:
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))

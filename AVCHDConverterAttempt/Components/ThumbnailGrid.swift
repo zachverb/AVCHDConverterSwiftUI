@@ -20,7 +20,7 @@ struct ThumbnailGrid: View {
                     NavigationLink(destination: VideoDetailsPage(video: video))
                     {
                         ThumbnailItem(video: video)
-                    }
+                    }.disabled(video.thumbnail.isLoading())
                 }
             }
         }

@@ -85,6 +85,7 @@ struct VideoDetailsPage: View {
             }
             Spacer()
         }.onAppear {
+            print("on appear of \(video.name) video details")
             if !FileManager.default.fileExists(
                 atPath: video.convertedURL.value()?.path ?? ""
             ) {

@@ -6,9 +6,9 @@
 //
 
 import Dispatch
-import Foundation  // For URL, FileManager
+import Foundation
 import SwiftUI
-import ffmpegkit  // Import the main framework
+import ffmpegkit
 
 enum ConversionType: String {
     case thumbnail = "Thumbnail"
@@ -23,7 +23,7 @@ enum ConversionType: String {
         qos: .userInitiated,
         attributes: .concurrent,
     )
-    private let semaphore = DispatchSemaphore(value: 1)
+    private let semaphore = DispatchSemaphore(value: 4)
 
     init() {}
 
@@ -37,6 +37,7 @@ enum ConversionType: String {
         guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
         else {
             print("no bookmark for key: \(video.key) - skipping")
+            callback(.failed)
             return
         }
         do {
@@ -54,6 +55,7 @@ enum ConversionType: String {
                 )
                 // In a real app, you would likely prompt the user to re-select the directory.
                 UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
+                callback(.failed)
                 return
             }
             let didStartAccessing =
@@ -101,9 +103,7 @@ enum ConversionType: String {
                     print("Cancelled generating thumbnail for \(video.name)")
                     callback(.new)
                 } else {
-                    print(
-                        "FFmpeg failed: \(returnCode.description)"
-                    )
+                    print("FFmpeg failed: \(returnCode.description)")
                     callback(.failed)
                 }
             }
@@ -116,6 +116,7 @@ enum ConversionType: String {
             print(
                 "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
             )
+            callback(.failed)
             return
         }
     }
@@ -140,7 +141,6 @@ enum ConversionType: String {
                 print(
                     "Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user."
                 )
-                // In a real app, you would likely prompt the user to re-select the directory.
                 UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
                 return
             }
@@ -198,7 +198,7 @@ enum ConversionType: String {
         // -frames:v 1: Output only one video frame
         // -an: No audio
         // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
-        // -q:v 2: JPEG quality (1=best, 31=worst)
+        // -q:v 4: JPEG quality (1=best, 31=worst)
         let command =
             "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 4 \"\(thumbnailOutputPath.path)\""
 
