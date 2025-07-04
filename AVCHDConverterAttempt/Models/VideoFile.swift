@@ -9,7 +9,7 @@ import Foundation  // For URL.
 
 enum LoadingURLResult: Equatable {
     case new
-    case loading
+    case loading(String)
     case success(URL)
     case failed
     
@@ -19,6 +19,15 @@ enum LoadingURLResult: Equatable {
             return url
         default:
             return nil
+        }
+    }
+    
+    func isLoading() -> Bool {
+        switch self {
+        case .loading:
+            return true
+        default:
+            return false
         }
     }
 }

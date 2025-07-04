@@ -69,7 +69,7 @@ struct VideoDetailsPage: View {
                         }
                     }
                 }.disabled(
-                    self.video.convertedURL == .loading || isSaving || isSaved
+                    self.video.convertedURL.isLoading() || isSaving || isSaved
                 )
             } else {
                 ThumbnailItem(video: video)
@@ -102,7 +102,13 @@ struct VideoDetailsPage: View {
             print("on disappear!")
             player?.pause()
             player = nil
-            videoProcessor.cancelSessionForID(uuid: video.id, namespace: "VideoConversion")
+            switch video.convertedURL {
+            case .loading(let taskId):
+                videoProcessor.cancelSessionForID(id: taskId)
+                return
+            default:
+                return
+            }
         }
     }
 }

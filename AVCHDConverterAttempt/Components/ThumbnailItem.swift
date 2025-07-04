@@ -64,14 +64,24 @@ struct ThumbnailItem: View {
             case .new:
                 videoProcessor.generateThumbnail(video: video)
                 return
+            case .loading(let taskId):
+                if !videoProcessor.sessionExistsForID(id: taskId) {
+                    video.thumbnail = .new
+                }
             default:
                 return
             }
         }
         .onDisappear {
-            if (video.thumbnail == .loading) {
-                print("cancel session for \(video.name)")
-                videoProcessor.cancelSessionForID(uuid: video.id, namespace: "ThumbnailGeneration")
+            switch video.thumbnail {
+            case .loading(let taskId):
+                if videoProcessor.sessionExistsForID(id: taskId) {
+                    print("cancel session for \(video.name)")
+                    videoProcessor.cancelSessionForID(id: taskId)
+                }
+                video.thumbnail = .new
+            default:
+                return
             }
         }
     }

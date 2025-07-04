@@ -10,6 +10,11 @@ import Foundation  // For URL, FileManager
 import SwiftUI
 import ffmpegkit  // Import the main framework
 
+enum ConversionType: String {
+    case thumbnail = "Thumbnail"
+    case mp4 = "MP4VideoConversion"
+}
+
 @Observable class VideoProcessor {
     private var activeTasks: [String: DispatchWorkItem] = [:]
     private let stateLock = NSLock()
@@ -24,8 +29,8 @@ import ffmpegkit  // Import the main framework
 
     func executeFfmpegCommand(
         video: VideoFile,
+        taskId: String,
         outputURL: URL,
-        namespace: String,
         command: String,
         callback: @escaping (LoadingURLResult) -> Void
     ) {
@@ -59,11 +64,7 @@ import ffmpegkit  // Import the main framework
                 }
             }
             self.stateLock.lock()
-            let id = self.getNamespacedId(
-                uuid: video.id,
-                namespace: namespace
-            )
-            if self.activeTasks[id] != nil {
+            if self.activeTasks[taskId] != nil {
                 print(
                     "Current session for \(video.id) already exists, ignoring"
                 )
@@ -78,7 +79,7 @@ import ffmpegkit  // Import the main framework
 
                 defer {
                     self.stateLock.lock()
-                    self.activeTasks[id] = nil
+                    self.activeTasks[taskId] = nil
                     self.stateLock.unlock()
                     self.semaphore.signal()
                 }
@@ -109,7 +110,7 @@ import ffmpegkit  // Import the main framework
 
             queue.async(execute: task)
             self.stateLock.lock()
-            self.activeTasks[id] = task
+            self.activeTasks[taskId] = task
             self.stateLock.unlock()
         } catch {
             print(
@@ -202,11 +203,14 @@ import ffmpegkit  // Import the main framework
             "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 4 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
-        video.thumbnail = .loading
+
+        let taskId = self.getNamespacedId(uuid: video.id, namespace: .thumbnail)
+        video.thumbnail = .loading(taskId)
+
         executeFfmpegCommand(
             video: video,
+            taskId: taskId,
             outputURL: thumbnailOutputPath,
-            namespace: "ThumbnailGeneration",
             command: command
         ) { result in
             DispatchQueue.main.async {
@@ -242,11 +246,12 @@ import ffmpegkit  // Import the main framework
 
         let command = commandArgs.joined(separator: " ")
         print("FFmpeg command: \(command)")
-        video.convertedURL = .loading
+        let taskId = self.getNamespacedId(uuid: video.id, namespace: .thumbnail)
+        video.convertedURL = .loading(taskId)
         executeFfmpegCommand(
             video: video,
+            taskId: taskId,
             outputURL: convertedOutputPath,
-            namespace: "VideoConversion",
             command: command
         ) { result in
             DispatchQueue.main.async {
@@ -275,9 +280,8 @@ import ffmpegkit  // Import the main framework
         return loadingURL
     }
 
-    func cancelSessionForID(uuid: UUID, namespace: String) {
+    func cancelSessionForID(id: String) {
         self.stateLock.lock()
-        let id = getNamespacedId(uuid: uuid, namespace: namespace)
         if let task = activeTasks[id] {
             task.cancel()
         }
@@ -294,7 +298,15 @@ import ffmpegkit  // Import the main framework
         stateLock.unlock()
     }
 
-    private func getNamespacedId(uuid: UUID, namespace: String) -> String {
+    func sessionExistsForID(id: String) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return activeTasks[id] != nil
+    }
+
+    private func getNamespacedId(uuid: UUID, namespace: ConversionType)
+        -> String
+    {
         return "\(namespace)-\(uuid)"
     }
 }
