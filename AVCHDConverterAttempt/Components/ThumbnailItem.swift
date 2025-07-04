@@ -19,7 +19,6 @@ struct ThumbnailItem: View {
         Group {
             switch video.thumbnail {
             case .success(let url):
-                let _ = print("Loading thumbnail for \(video.name) \(url.path)")
                 Image(
                     uiImage: UIImage(contentsOfFile: url.path)
                         ?? UIImage()
@@ -70,8 +69,10 @@ struct ThumbnailItem: View {
             }
         }
         .onDisappear {
-            print("cancel session for \(video.name)")
-            videoProcessor.cancelSessionForID(uuid: video.id)
+            if (video.thumbnail == .loading) {
+                print("cancel session for \(video.name)")
+                videoProcessor.cancelSessionForID(uuid: video.id, namespace: "ThumbnailGeneration")
+            }
         }
     }
 }

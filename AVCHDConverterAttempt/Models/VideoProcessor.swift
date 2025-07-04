@@ -5,19 +5,25 @@
 //  Created by Zachary Verbeck on 6/25/25.
 //
 
+import Dispatch
 import Foundation  // For URL, FileManager
 import SwiftUI
 import ffmpegkit  // Import the main framework
 
 @Observable class VideoProcessor {
-    private var ffmpegSessions: [UUID: FFmpegSession]
+    private var activeTasks: [String: DispatchWorkItem] = [:]
+    private let stateLock = NSLock()
+    private let queue = DispatchQueue(
+        label: "com.zacharyverbeck.AVCHDConverterAttempt.VideoProcessor",
+        attributes: .concurrent
+    )
+    private let semaphore = DispatchSemaphore(value: 1)
 
-    init(ffmpegSessions: [UUID: FFmpegSession] = [:]) {
-        self.ffmpegSessions = ffmpegSessions
-    }
+    init() {}
 
     func executeFfmpegCommand(
         video: VideoFile,
+        namespace: String,
         command: String,
         callback: @escaping FFmpegSessionCompleteCallback
     ) {
@@ -26,7 +32,6 @@ import ffmpegkit  // Import the main framework
             print("no bookmark for key: \(video.key) - skipping")
             return
         }
-
         do {
             var isStale = false
 
@@ -51,17 +56,42 @@ import ffmpegkit  // Import the main framework
                     directoryURL.stopAccessingSecurityScopedResource()
                 }
             }
-
-            let currentSession = FFmpegKit.executeAsync(command) { session in
-                print("callback \(session?.description ?? "no desc")")
-                callback(session)
-            } withLogCallback: { log in
-                // Do nothing!
-            } withStatisticsCallback: { stats in
-                // Do nothing again!
+            self.stateLock.lock()
+            let id = self.getNamespacedId(
+                uuid: video.id,
+                namespace: namespace
+            )
+            if self.activeTasks[id] != nil {
+                print(
+                    "Current session for \(video.id) already exists, ignoring"
+                )
+                self.stateLock.unlock()
+                return
             }
-            print("Current session \(currentSession?.description ?? "no desc")")
-            ffmpegSessions[video.id] = currentSession
+            self.stateLock.unlock()
+
+            var task: DispatchWorkItem!
+            task = DispatchWorkItem {
+                self.semaphore.wait()
+
+                defer {
+                    self.semaphore.signal()
+                }
+
+                if task.isCancelled {
+                    return
+                }
+
+                let session = FFmpegKit.execute(command)
+                callback(session)
+                self.stateLock.lock()
+                self.activeTasks[id] = nil
+                self.stateLock.unlock()
+            }
+            queue.async(execute: task)
+            self.stateLock.lock()
+            self.activeTasks[id] = task
+            self.stateLock.unlock()
         } catch {
             print(
                 "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
@@ -154,7 +184,11 @@ import ffmpegkit  // Import the main framework
 
         print("FFmpeg command: \(command)")
         video.thumbnail = .loading
-        executeFfmpegCommand(video: video, command: command) { session in
+        executeFfmpegCommand(
+            video: video,
+            namespace: "ThumbnailGeneration",
+            command: command
+        ) { session in
             guard let returnCode = session?.getReturnCode() else {
                 DispatchQueue.main.async {
                     video.thumbnail = .failed
@@ -163,7 +197,6 @@ import ffmpegkit  // Import the main framework
             }
 
             DispatchQueue.main.async {
-                self.ffmpegSessions.removeValue(forKey: video.id)
                 if ReturnCode.isSuccess(returnCode) {
                     print("Thumbnail saved! \(thumbnailOutputPath.path)")
                     video.thumbnail = .success(thumbnailOutputPath)
@@ -193,9 +226,10 @@ import ffmpegkit  // Import the main framework
             "-y",
             "-i", video.privateURL.path,
             "-c:v", "copy",
+            //            "-c:a aac -strict experimental -b:a 128k",
             "-c:a", "copy",
             "-f", "mp4",
-            "-vsync", "2",
+            //            "-vsync", "2",
         ]
 
         if let framerate = video.details?.framerate {
@@ -207,8 +241,13 @@ import ffmpegkit  // Import the main framework
         let command = commandArgs.joined(separator: " ")
         print("FFmpeg command: \(command)")
         video.convertedURL = .loading
-        executeFfmpegCommand(video: video, command: command) { session in
+        executeFfmpegCommand(
+            video: video,
+            namespace: "VideoConversion",
+            command: command
+        ) { session in
             guard let returnCode = session?.getReturnCode() else {
+                print("no return code??")
                 DispatchQueue.main.async {
                     video.convertedURL = .failed
                 }
@@ -250,13 +289,26 @@ import ffmpegkit  // Import the main framework
         return loadingURL
     }
 
-    func cancelSessionForID(uuid: UUID) {
-        if let session = ffmpegSessions[uuid] {
-            if let command = session.getCommand() {
-                print("Cancelling running ffmpeg command: \(command)")
-            }
-            session.cancel()
+    func cancelSessionForID(uuid: UUID, namespace: String) {
+        self.stateLock.lock()
+        let id = getNamespacedId(uuid: uuid, namespace: namespace)
+        if let task = activeTasks[id] {
+            task.cancel()
         }
-        ffmpegSessions.removeValue(forKey: uuid)
+        activeTasks.removeValue(forKey: id)
+        self.stateLock.unlock()
+    }
+
+    func cancelAllSessions() {
+        stateLock.lock()
+        for task in activeTasks.values {
+            task.cancel()
+        }
+        activeTasks.removeAll()
+        stateLock.unlock()
+    }
+
+    private func getNamespacedId(uuid: UUID, namespace: String) -> String {
+        return "\(namespace)-\(uuid)"
     }
 }

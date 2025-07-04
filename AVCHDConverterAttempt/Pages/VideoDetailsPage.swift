@@ -94,6 +94,7 @@ struct VideoDetailsPage: View {
                 player = AVPlayer(url: url)
             }
         }.onChange(of: video.convertedURL) { newValue, oldValue in
+            print("Change, \(newValue)")
             if newValue != oldValue, let url = video.convertedURL.value() {
                 player = AVPlayer(url: url)
             }
@@ -101,7 +102,7 @@ struct VideoDetailsPage: View {
             print("on disappear!")
             player?.pause()
             player = nil
-            videoProcessor.cancelSessionForID(uuid: video.id)
+            videoProcessor.cancelSessionForID(uuid: video.id, namespace: "VideoConversion")
         }
     }
 }

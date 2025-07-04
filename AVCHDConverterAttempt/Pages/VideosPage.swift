@@ -12,6 +12,7 @@ struct VideosPage: View {
     @State private var pickedFiles: [VideoFile] = []
     @State private var message: String = "No directory selected."
     @State private var directoryName: String?
+    @Environment(VideoProcessor.self) private var videoProcessor
 
     var body: some View {
         VStack(spacing: 20) {
@@ -53,5 +54,8 @@ struct VideosPage: View {
         }
         .navigationTitle("Directory picker")
         .navigationBarTitleDisplayMode(.automatic)
+        .onDisappear {
+            videoProcessor.cancelAllSessions()
+        }
     }
 }
