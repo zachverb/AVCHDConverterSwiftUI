@@ -24,9 +24,10 @@ import ffmpegkit  // Import the main framework
 
     func executeFfmpegCommand(
         video: VideoFile,
+        outputURL: URL,
         namespace: String,
         command: String,
-        callback: @escaping FFmpegSessionCompleteCallback
+        callback: @escaping (LoadingURLResult) -> Void
     ) {
         guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
         else {
@@ -76,20 +77,36 @@ import ffmpegkit  // Import the main framework
                 self.semaphore.wait()
 
                 defer {
+                    self.stateLock.lock()
+                    self.activeTasks[id] = nil
+                    self.stateLock.unlock()
                     self.semaphore.signal()
                 }
 
                 if task.isCancelled {
-                    callback(FFmpegSession.create([]))
+                    callback(.new)
                     return
                 }
 
                 let session = FFmpegKit.execute(command)
-                callback(session)
-                self.stateLock.lock()
-                self.activeTasks[id] = nil
-                self.stateLock.unlock()
+                guard let returnCode = session?.getReturnCode() else {
+                    callback(.new)
+                    return
+                }
+
+                if ReturnCode.isSuccess(returnCode) {
+                    callback(.success(outputURL))
+                } else if ReturnCode.isCancel(returnCode) {
+                    print("Cancelled generating thumbnail for \(video.name)")
+                    callback(.new)
+                } else {
+                    print(
+                        "FFmpeg failed: \(returnCode.description)"
+                    )
+                    callback(.failed)
+                }
             }
+
             queue.async(execute: task)
             self.stateLock.lock()
             self.activeTasks[id] = task
@@ -182,35 +199,18 @@ import ffmpegkit  // Import the main framework
         // -vf "scale=iw*max(100/iw\,100/ih):ih*max(100/iw\,100/ih),crop=100:100": Scale and center-crop to 100x100
         // -q:v 2: JPEG quality (1=best, 31=worst)
         let command =
-            "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 2 \"\(thumbnailOutputPath.path)\""
+            "-y -ss 00:00:01 -i \"\(video.privateURL.path)\" -frames:v 1 -an -vf \"scale=iw*max(100/iw\\,100/ih):ih*max(100/iw\\,100/ih),crop=100:100\" -q:v 4 \"\(thumbnailOutputPath.path)\""
 
         print("FFmpeg command: \(command)")
         video.thumbnail = .loading
         executeFfmpegCommand(
             video: video,
+            outputURL: thumbnailOutputPath,
             namespace: "ThumbnailGeneration",
             command: command
-        ) { session in
-            guard let returnCode = session?.getReturnCode() else {
-                DispatchQueue.main.async {
-                    video.thumbnail = .new
-                }
-                return
-            }
-
+        ) { result in
             DispatchQueue.main.async {
-                if ReturnCode.isSuccess(returnCode) {
-                    print("Thumbnail saved! \(thumbnailOutputPath.path)")
-                    video.thumbnail = .success(thumbnailOutputPath)
-                } else if ReturnCode.isCancel(returnCode) {
-                    print("Cancelled generating thumbnail for \(video.name)")
-                    video.thumbnail = .new
-                } else {
-                    video.thumbnail = .failed
-                    print(
-                        "FFmpeg failed: \(returnCode.description)"
-                    )
-                }
+                video.thumbnail = result
             }
         }
     }
@@ -245,28 +245,12 @@ import ffmpegkit  // Import the main framework
         video.convertedURL = .loading
         executeFfmpegCommand(
             video: video,
+            outputURL: convertedOutputPath,
             namespace: "VideoConversion",
             command: command
-        ) { session in
-            guard let returnCode = session?.getReturnCode() else {
-                print("no return code??")
-                DispatchQueue.main.async {
-                    video.convertedURL = .new
-                }
-                return
-            }
-
+        ) { result in
             DispatchQueue.main.async {
-                if ReturnCode.isSuccess(returnCode) {
-                    print("video saved! \(convertedOutputPath.path)")
-                    video.convertedURL = .success(convertedOutputPath)
-                } else if ReturnCode.isCancel(returnCode) {
-                    print("Cancelled converting video for \(video.name)")
-                    video.convertedURL = .new
-                } else {
-                    video.convertedURL = .failed
-                    print("FFmpeg failed: \(returnCode.description)")
-                }
+                video.convertedURL = result
             }
         }
     }

@@ -54,8 +54,5 @@ struct VideosPage: View {
         }
         .navigationTitle("Directory picker")
         .navigationBarTitleDisplayMode(.automatic)
-        .onDisappear {
-            videoProcessor.cancelAllSessions()
-        }
     }
 }
