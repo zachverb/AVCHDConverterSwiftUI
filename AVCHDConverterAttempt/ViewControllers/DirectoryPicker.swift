@@ -126,6 +126,8 @@ struct DirectoryPicker: UIViewControllerRepresentable {
         }
         
         func isMTSFile(url: URL) -> Bool {
+            return url.absoluteString.lowercased().hasSuffix(".mts")
+        }
     }
 }
 
