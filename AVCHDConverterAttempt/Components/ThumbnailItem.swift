@@ -94,3 +94,8 @@ struct ThumbnailItem: View {
         }
     }
 }
+
+#Preview {
+    ThumbnailItem(video: VideoFile(privateURL: URL(filePath: "")!, name: "0000.MTS", bookmark: Data(), key: "key"))
+        .environment(VideoProcessor())
+}

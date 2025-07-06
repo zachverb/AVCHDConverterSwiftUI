@@ -23,7 +23,7 @@ enum ConversionType: String {
         qos: .userInitiated,
         attributes: .concurrent,
     )
-    private let semaphore = DispatchSemaphore(value: 4)
+    private let semaphore = DispatchSemaphore(value: 2)
 
     init() {}
 
@@ -100,7 +100,6 @@ enum ConversionType: String {
                 if ReturnCode.isSuccess(returnCode) {
                     callback(.success(outputURL))
                 } else if ReturnCode.isCancel(returnCode) {
-                    print("Cancelled generating thumbnail for \(video.name)")
                     callback(.new)
                 } else {
                     print("FFmpeg failed: \(returnCode.description)")
@@ -213,9 +212,7 @@ enum ConversionType: String {
             outputURL: thumbnailOutputPath,
             command: command
         ) { result in
-            DispatchQueue.main.async {
-                video.thumbnail = result
-            }
+            video.thumbnail = result
         }
     }
 
@@ -254,9 +251,7 @@ enum ConversionType: String {
             outputURL: convertedOutputPath,
             command: command
         ) { result in
-            DispatchQueue.main.async {
-                video.convertedURL = result
-            }
+            video.convertedURL = result
         }
     }
 
@@ -282,20 +277,20 @@ enum ConversionType: String {
 
     func cancelSessionForID(id: String) {
         self.stateLock.lock()
+        defer { stateLock.unlock() }
         if let task = activeTasks[id] {
             task.cancel()
         }
         activeTasks.removeValue(forKey: id)
-        self.stateLock.unlock()
     }
 
     func cancelAllSessions() {
         stateLock.lock()
+        defer { stateLock.unlock() }
         for task in activeTasks.values {
             task.cancel()
         }
         activeTasks.removeAll()
-        stateLock.unlock()
     }
 
     func sessionExistsForID(id: String) -> Bool {

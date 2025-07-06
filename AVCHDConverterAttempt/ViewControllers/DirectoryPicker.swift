@@ -85,7 +85,7 @@ struct DirectoryPicker: UIViewControllerRepresentable {
 
                     // Filter out subdirectories if you only want files
                     let fileURLs = contents.filter {
-                        $0.isFileURL && !fileManager.isDirectory($0)
+                        $0.isFileURL && !fileManager.isDirectory($0) && isMTSFile(url: $0)
                     }
 
                     var videos: [VideoFile] = []
@@ -124,6 +124,8 @@ struct DirectoryPicker: UIViewControllerRepresentable {
             parent.onCancelled()
             parent.presentationMode.wrappedValue.dismiss()
         }
+        
+        func isMTSFile(url: URL) -> Bool {
     }
 }
 

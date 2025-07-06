@@ -52,40 +52,48 @@ struct VideoDetailsPage: View {
     }
 
     var body: some View {
-        VStack {
-            Text(video.name)
-                .font(.headline)
-            if let player = player {  // Safely unwrap player before using it
-                VideoPlayer(player: player)
-                    .aspectRatio(1.778, contentMode: .fit)
-                    .onAppear {
-                        player.play()  // Start playing once the view appears
-                    }
-                Button(isSaved ? "Video saved!" : "Save to photos") {
-                    isSaving = true
-                    if let videoURL = video.convertedURL.value() {
-                        saveVideo(videoURL: videoURL) { _ in
-                            isSaving = false
+        List {
+            Section {
+                Text(video.name)
+                    .font(.headline)
+                if let player = player {  // Safely unwrap player before using it
+                    VideoPlayer(player: player)
+                        .aspectRatio(1.778, contentMode: .fit)
+                        .onAppear {
+                            player.play()  // Start playing once the view appears
                         }
+                } else {
+                    HStack {
+                        Spacer()
+                        ThumbnailItem(video: video)
+                        Spacer()
                     }
-                }.disabled(
-                    self.video.convertedURL.isLoading() || isSaving || isSaved
-                )
-            } else {
-                ThumbnailItem(video: video)
+                }
             }
             if let details = video.details {
-                Text("Framerate: \(details.framerate)")
-                Text("Duration: \(details.duration)")
-                Text("Height: \(details.height)")
-                Text("Width: \(details.width)")
+                Section {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Button(isSaved ? "Video saved!" : "Save to photos") {
+                            isSaving = true
+                            if let videoURL = video.convertedURL.value() {
+                                saveVideo(videoURL: videoURL) { _ in
+                                    isSaving = false
+                                }
+                            }
+                        }.disabled(
+                            self.video.convertedURL.isLoading() || isSaved
+                        )
+                    }
+                    Text("Framerate: \(details.framerate)")
+                    Text("Duration: \(details.duration)")
+                    Text("Height: \(String(details.height))")
+                    Text("Width: \(String(details.width))")
+                }
             }
-            if isSaving {
-                ProgressView()
-            }
-            Spacer()
-        }.onAppear {
-            print("on appear of \(video.name) video details")
+        }
+        .onAppear {
             if !FileManager.default.fileExists(
                 atPath: video.convertedURL.value()?.path ?? ""
             ) {
@@ -95,12 +103,10 @@ struct VideoDetailsPage: View {
                 player = AVPlayer(url: url)
             }
         }.onChange(of: video.convertedURL) { newValue, oldValue in
-            print("Change, \(newValue)")
             if newValue != oldValue, let url = video.convertedURL.value() {
                 player = AVPlayer(url: url)
             }
         }.onDisappear {
-            print("on disappear!")
             player?.pause()
             player = nil
             switch video.convertedURL {
@@ -112,4 +118,22 @@ struct VideoDetailsPage: View {
             }
         }
     }
+}
+
+#Preview {
+    VideoDetailsPage(
+        video: VideoFile(
+            privateURL: URL(filePath: "")!,
+            name: "0000.MTS",
+            bookmark: Data(),
+            key: "key",
+            details: VideoDetails(
+                duration: 0.01,
+                height: 720,
+                width: 1280,
+                framerate: "60000/1001"
+            )
+        )
+    )
+    .environment(VideoProcessor())
 }

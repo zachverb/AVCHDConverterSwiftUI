@@ -12,30 +12,26 @@ struct VideosPage: View {
     @State private var pickedFiles: [VideoFile] = []
     @State private var message: String = "No directory selected."
     @State private var directoryName: String?
-    @Environment(VideoProcessor.self) private var videoProcessor
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(message)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            Section(message) {
+                Button("Open Directory") {
+                    showDirectoryPicker = true
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
 
-            Button("Open Directory") {
-                showDirectoryPicker = true
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-
-            if pickedFiles.count > 0 {
-                Text(
-                    "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
-                )
-                .font(.title2)
-                .padding(.top)
-                ThumbnailGrid(pickedFiles: $pickedFiles)
-            } else {
-                Spacer()
+                if pickedFiles.count > 0 {
+                    Text(
+                        "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
+                    )
+                    .font(.title2)
+                    .padding(.top)
+                    ThumbnailGrid(pickedFiles: $pickedFiles)
+                } else {
+                    Spacer()
+                }
             }
         }
         .sheet(isPresented: $showDirectoryPicker) {
@@ -54,5 +50,11 @@ struct VideosPage: View {
         }
         .navigationTitle("Directory picker")
         .navigationBarTitleDisplayMode(.automatic)
+    }
+}
+
+struct VideosPage_Previews: PreviewProvider {
+    static var previews: some View {
+        VideosPage()
     }
 }
