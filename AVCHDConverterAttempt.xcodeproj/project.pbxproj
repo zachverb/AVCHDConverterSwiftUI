@@ -7,22 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0AAB444C2E0BEDD40003AA51 /* libswscale.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44442E0BEDD40003AA51 /* libswscale.xcframework */; };
-		0AAB444D2E0BEDD40003AA51 /* libswscale.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44442E0BEDD40003AA51 /* libswscale.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB444E2E0BEDD40003AA51 /* libavcodec.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44452E0BEDD40003AA51 /* libavcodec.xcframework */; };
-		0AAB444F2E0BEDD40003AA51 /* libavcodec.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44452E0BEDD40003AA51 /* libavcodec.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB44502E0BEDD40003AA51 /* libavformat.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44462E0BEDD40003AA51 /* libavformat.xcframework */; };
-		0AAB44512E0BEDD40003AA51 /* libavformat.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44462E0BEDD40003AA51 /* libavformat.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB44522E0BEDD40003AA51 /* libavfilter.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44472E0BEDD40003AA51 /* libavfilter.xcframework */; };
-		0AAB44532E0BEDD40003AA51 /* libavfilter.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44472E0BEDD40003AA51 /* libavfilter.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB44542E0BEDD40003AA51 /* libavdevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44482E0BEDD40003AA51 /* libavdevice.xcframework */; };
-		0AAB44552E0BEDD40003AA51 /* libavdevice.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44482E0BEDD40003AA51 /* libavdevice.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB44562E0BEDD40003AA51 /* ffmpegkit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44492E0BEDD40003AA51 /* ffmpegkit.xcframework */; };
-		0AAB44572E0BEDD40003AA51 /* ffmpegkit.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44492E0BEDD40003AA51 /* ffmpegkit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB44582E0BEDD40003AA51 /* libswresample.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444A2E0BEDD40003AA51 /* libswresample.xcframework */; };
-		0AAB44592E0BEDD40003AA51 /* libswresample.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444A2E0BEDD40003AA51 /* libswresample.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		0AAB445A2E0BEDD40003AA51 /* libavutil.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444B2E0BEDD40003AA51 /* libavutil.xcframework */; };
-		0AAB445B2E0BEDD40003AA51 /* libavutil.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444B2E0BEDD40003AA51 /* libavutil.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D732E1E520D00566CC0 /* ffmpegkit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44492E0BEDD40003AA51 /* ffmpegkit.xcframework */; };
+		0A442D742E1E520D00566CC0 /* ffmpegkit.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44492E0BEDD40003AA51 /* ffmpegkit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D752E1E520D00566CC0 /* libavcodec.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44452E0BEDD40003AA51 /* libavcodec.xcframework */; };
+		0A442D762E1E520D00566CC0 /* libavcodec.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44452E0BEDD40003AA51 /* libavcodec.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D772E1E520D00566CC0 /* libavdevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44482E0BEDD40003AA51 /* libavdevice.xcframework */; };
+		0A442D782E1E520D00566CC0 /* libavdevice.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44482E0BEDD40003AA51 /* libavdevice.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D792E1E520D00566CC0 /* libavfilter.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44472E0BEDD40003AA51 /* libavfilter.xcframework */; };
+		0A442D7A2E1E520D00566CC0 /* libavfilter.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44472E0BEDD40003AA51 /* libavfilter.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D7B2E1E520D00566CC0 /* libavformat.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44462E0BEDD40003AA51 /* libavformat.xcframework */; };
+		0A442D7C2E1E520D00566CC0 /* libavformat.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44462E0BEDD40003AA51 /* libavformat.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D7D2E1E520D00566CC0 /* libavutil.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444B2E0BEDD40003AA51 /* libavutil.xcframework */; };
+		0A442D7E2E1E520E00566CC0 /* libavutil.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444B2E0BEDD40003AA51 /* libavutil.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D7F2E1E520E00566CC0 /* libswresample.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444A2E0BEDD40003AA51 /* libswresample.xcframework */; };
+		0A442D802E1E520E00566CC0 /* libswresample.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB444A2E0BEDD40003AA51 /* libswresample.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A442D812E1E520E00566CC0 /* libswscale.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44442E0BEDD40003AA51 /* libswscale.xcframework */; };
+		0A442D822E1E520E00566CC0 /* libswscale.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44442E0BEDD40003AA51 /* libswscale.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0AAB445F2E0BEE610003AA51 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB445E2E0BEE610003AA51 /* VideoToolbox.framework */; };
 		0AAB44602E0BEE6B0003AA51 /* libbz2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB445D2E0BEE4B0003AA51 /* libbz2.tbd */; };
 		0AAB44622E0BEE7D0003AA51 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AAB44612E0BEE750003AA51 /* libc++.tbd */; };
@@ -49,20 +49,20 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		0AAB445C2E0BEDD40003AA51 /* Embed Frameworks */ = {
+		0A442D832E1E520E00566CC0 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0AAB445B2E0BEDD40003AA51 /* libavutil.xcframework in Embed Frameworks */,
-				0AAB444D2E0BEDD40003AA51 /* libswscale.xcframework in Embed Frameworks */,
-				0AAB44512E0BEDD40003AA51 /* libavformat.xcframework in Embed Frameworks */,
-				0AAB44552E0BEDD40003AA51 /* libavdevice.xcframework in Embed Frameworks */,
-				0AAB44532E0BEDD40003AA51 /* libavfilter.xcframework in Embed Frameworks */,
-				0AAB444F2E0BEDD40003AA51 /* libavcodec.xcframework in Embed Frameworks */,
-				0AAB44572E0BEDD40003AA51 /* ffmpegkit.xcframework in Embed Frameworks */,
-				0AAB44592E0BEDD40003AA51 /* libswresample.xcframework in Embed Frameworks */,
+				0A442D742E1E520D00566CC0 /* ffmpegkit.xcframework in Embed Frameworks */,
+				0A442D782E1E520D00566CC0 /* libavdevice.xcframework in Embed Frameworks */,
+				0A442D7A2E1E520D00566CC0 /* libavfilter.xcframework in Embed Frameworks */,
+				0A442D762E1E520D00566CC0 /* libavcodec.xcframework in Embed Frameworks */,
+				0A442D7E2E1E520E00566CC0 /* libavutil.xcframework in Embed Frameworks */,
+				0A442D7C2E1E520D00566CC0 /* libavformat.xcframework in Embed Frameworks */,
+				0A442D822E1E520E00566CC0 /* libswscale.xcframework in Embed Frameworks */,
+				0A442D802E1E520E00566CC0 /* libswresample.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -70,6 +70,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0AAA5BEA2E1B0A0E0006D67E /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		0AAB44172E0BA1720003AA51 /* AVCHDConverterAttempt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AVCHDConverterAttempt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AAB44242E0BA1740003AA51 /* AVCHDConverterAttemptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AVCHDConverterAttemptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AAB442E2E0BA1740003AA51 /* AVCHDConverterAttemptUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AVCHDConverterAttemptUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,20 +126,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0AAB445A2E0BEDD40003AA51 /* libavutil.xcframework in Frameworks */,
 				0AAB44682E0BEE9D0003AA51 /* Accelerate.framework in Frameworks */,
+				0A442D752E1E520D00566CC0 /* libavcodec.xcframework in Frameworks */,
+				0A442D7F2E1E520E00566CC0 /* libswresample.xcframework in Frameworks */,
 				0AAB44622E0BEE7D0003AA51 /* libc++.tbd in Frameworks */,
+				0A442D7B2E1E520D00566CC0 /* libavformat.xcframework in Frameworks */,
+				0A442D7D2E1E520D00566CC0 /* libavutil.xcframework in Frameworks */,
 				0AAB44602E0BEE6B0003AA51 /* libbz2.tbd in Frameworks */,
-				0AAB444C2E0BEDD40003AA51 /* libswscale.xcframework in Frameworks */,
+				0A442D772E1E520D00566CC0 /* libavdevice.xcframework in Frameworks */,
+				0A442D732E1E520D00566CC0 /* ffmpegkit.xcframework in Frameworks */,
 				0AAB445F2E0BEE610003AA51 /* VideoToolbox.framework in Frameworks */,
-				0AAB44502E0BEDD40003AA51 /* libavformat.xcframework in Frameworks */,
 				0AAB44662E0BEE950003AA51 /* CoreMotion.framework in Frameworks */,
+				0A442D792E1E520D00566CC0 /* libavfilter.xcframework in Frameworks */,
+				0A442D812E1E520E00566CC0 /* libswscale.xcframework in Frameworks */,
 				0AAB44642E0BEE8D0003AA51 /* libiconv.tbd in Frameworks */,
-				0AAB44542E0BEDD40003AA51 /* libavdevice.xcframework in Frameworks */,
-				0AAB44522E0BEDD40003AA51 /* libavfilter.xcframework in Frameworks */,
-				0AAB444E2E0BEDD40003AA51 /* libavcodec.xcframework in Frameworks */,
-				0AAB44562E0BEDD40003AA51 /* ffmpegkit.xcframework in Frameworks */,
-				0AAB44582E0BEDD40003AA51 /* libswresample.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,6 +184,7 @@
 		0AAB44432E0BEDD40003AA51 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0AAA5BEA2E1B0A0E0006D67E /* libz.tbd */,
 				0AAB44672E0BEE9C0003AA51 /* Accelerate.framework */,
 				0AAB44652E0BEE950003AA51 /* CoreMotion.framework */,
 				0AAB44632E0BEE840003AA51 /* libiconv.tbd */,
@@ -211,7 +213,7 @@
 				0AAB44132E0BA1720003AA51 /* Sources */,
 				0AAB44142E0BA1720003AA51 /* Frameworks */,
 				0AAB44152E0BA1720003AA51 /* Resources */,
-				0AAB445C2E0BEDD40003AA51 /* Embed Frameworks */,
+				0A442D832E1E520E00566CC0 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
