@@ -71,12 +71,12 @@ struct VideoDetailsPage: View {
                                             || isSaving
                                     )
                                 }
-                                Button("Share Original File") {
-                                    let _ = print("SHARE")
-                                }.disabled(
-                                    video.convertedURL.isLoading()
-                                        || isSaved
-                                )
+//                                Button("Share Original File") {
+//                                    let _ = print("SHARE")
+//                                }.disabled(
+//                                    video.convertedURL.isLoading()
+//                                        || isSaved
+//                                )
                                 Button(
                                     isSaved
                                         ? "Video saved!"

@@ -15,23 +15,17 @@ struct VideosPage: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Section(message) {
-                Button("Open Directory") {
-                    showDirectoryPicker = true
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.green)
+            Text(message)
 
-                if pickedFiles.count > 0 {
-                    Text(
-                        "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
-                    )
-                    .font(.title2)
-                    .padding(.top)
-                    ThumbnailGrid(pickedFiles: $pickedFiles)
-                } else {
-                    Spacer()
-                }
+            if pickedFiles.count > 0 {
+                Text(
+                    "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
+                )
+                .font(.title2)
+                .padding(.top)
+                ThumbnailGrid(pickedFiles: $pickedFiles)
+            } else {
+                Spacer()
             }
         }
         .sheet(isPresented: $showDirectoryPicker) {
@@ -48,8 +42,21 @@ struct VideosPage: View {
                 }
             )
         }
-        .navigationTitle("Directory picker")
-        .navigationBarTitleDisplayMode(.automatic)
+        .navigationBarTitle("Directory picker")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                HStack {
+                    Text("Pick Directory").font(.headline)
+                    Spacer()
+                    Button {
+                        showDirectoryPicker = true
+                    } label: {
+                        Image(systemName: "folder.badge.plus")
+                    }
+                }
+            }
+        }
     }
 }
 
