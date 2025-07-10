@@ -15,6 +15,13 @@ enum ConversionType: String {
     case mp4 = "MP4VideoConversion"
 }
 
+enum EncoderType: String, CaseIterable, Identifiable {
+    case copy = "Default"
+    case libx264 = "libx264"
+
+    var id: String { self.rawValue }
+}
+
 @Observable class VideoProcessor {
     private var activeTasks: [String: DispatchWorkItem] = [:]
     private let stateLock = NSLock()
@@ -23,7 +30,7 @@ enum ConversionType: String {
         qos: .userInitiated,
         attributes: .concurrent,
     )
-    private let semaphore = DispatchSemaphore(value: 2)
+    private let semaphore = DispatchSemaphore(value: 1)
 
     init() {}
 
@@ -216,7 +223,7 @@ enum ConversionType: String {
         }
     }
 
-    func generateConvertedMp4(video: VideoFile) {
+    func generateConvertedMp4(video: VideoFile, encoder: EncoderType) {
         let tempDirectory = FileManager.default.temporaryDirectory
         let mp4OutputFile =
             "converted_\(video.privateURL.deletingPathExtension().lastPathComponent).mp4"
@@ -225,14 +232,13 @@ enum ConversionType: String {
         )
         parseFileInfo(video: video)
 
-        var commandArgs = [
+        var commandArgs: [String] = [
             "-y",
             "-i", video.privateURL.path,
-            "-c:v", "copy",
+            "-c:v", String(describing: encoder),
             //            "-c:a aac -strict experimental -b:a 128k",
             "-c:a", "copy",
             "-f", "mp4",
-            //            "-vsync", "2",
         ]
 
         if let framerate = video.details?.framerate {
@@ -243,7 +249,11 @@ enum ConversionType: String {
 
         let command = commandArgs.joined(separator: " ")
         print("FFmpeg command: \(command)")
-        let taskId = self.getNamespacedId(uuid: video.id, namespace: .thumbnail)
+        let taskId = self.getNamespacedId(
+            uuid: video.id,
+            namespace: .mp4,
+            encoder: encoder
+        )
         video.convertedURL = .loading(taskId)
         executeFfmpegCommand(
             video: video,
@@ -299,9 +309,31 @@ enum ConversionType: String {
         return activeTasks[id] != nil
     }
 
-    private func getNamespacedId(uuid: UUID, namespace: ConversionType)
+    func deleteVideoFile(at url: LoadingURLResult) -> LoadingURLResult {
+        switch url {
+        case .success(let urlStr):
+            do {
+                try FileManager.default.removeItem(at: urlStr)
+            } catch {
+                print(
+                    "Error deleting video file: \(error.localizedDescription)"
+                )
+            }
+        case .loading(let taskId):
+            cancelSessionForID(id: taskId)
+        default:
+            return .new
+        }
+        return .new
+    }
+
+    private func getNamespacedId(
+        uuid: UUID,
+        namespace: ConversionType,
+        encoder: EncoderType? = nil
+    )
         -> String
     {
-        return "\(namespace)-\(uuid)"
+        return "\(namespace)-\(uuid)\(encoder?.rawValue ?? "")"
     }
 }
