@@ -131,8 +131,6 @@ struct DirectoryPicker: UIViewControllerRepresentable {
     }
 }
 
-// MARK: - Helper Extension for FileManager (to check if URL is a directory)
-
 extension FileManager {
     func isDirectory(_ url: URL) -> Bool {
         var isDir: ObjCBool = false

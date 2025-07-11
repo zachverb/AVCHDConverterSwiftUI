@@ -41,153 +41,115 @@ enum EncoderType: String, CaseIterable, Identifiable {
         command: String,
         callback: @escaping (LoadingURLResult) -> Void
     ) {
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
+        guard
+            let bookmark = accessBookmarkedFile(
+                url: video.privateURL,
+                key: video.key
+            )
         else {
-            print("no bookmark for key: \(video.key) - skipping")
-            callback(.failed)
+            print("Could not access: \(video.key) - skipping")
             return
         }
-        do {
-            var isStale = false
 
-            let directoryURL = try URL(
-                resolvingBookmarkData: bookmarkData,
-                options: [],  // Empty options
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-            if isStale {
-                print(
-                    "Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user."
-                )
-                // In a real app, you would likely prompt the user to re-select the directory.
-                UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
-                callback(.failed)
-                return
+        let didStartAccessing =
+            bookmark.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                bookmark.stopAccessingSecurityScopedResource()
             }
-            let didStartAccessing =
-                directoryURL.startAccessingSecurityScopedResource()
-            defer {
-                if didStartAccessing {
-                    directoryURL.stopAccessingSecurityScopedResource()
-                }
-            }
-            self.stateLock.lock()
-            if self.activeTasks[taskId] != nil {
-                print(
-                    "Current session for \(video.id) already exists, ignoring"
-                )
-                self.stateLock.unlock()
-                return
-            }
-            self.stateLock.unlock()
+        }
 
-            var task: DispatchWorkItem!
-            task = DispatchWorkItem {
-                self.semaphore.wait()
-
-                defer {
-                    self.stateLock.lock()
-                    self.activeTasks[taskId] = nil
-                    self.stateLock.unlock()
-                    self.semaphore.signal()
-                }
-
-                if task.isCancelled {
-                    callback(.new)
-                    return
-                }
-
-                let session = FFmpegKit.execute(command)
-                guard let returnCode = session?.getReturnCode() else {
-                    callback(.new)
-                    return
-                }
-
-                if ReturnCode.isSuccess(returnCode) {
-                    callback(.success(outputURL))
-                } else if ReturnCode.isCancel(returnCode) {
-                    callback(.new)
-                } else {
-                    print("FFmpeg failed: \(returnCode.description)")
-                    callback(.failed)
-                }
-            }
-
-            queue.async(execute: task)
-            self.stateLock.lock()
-            self.activeTasks[taskId] = task
-            self.stateLock.unlock()
-        } catch {
+        self.stateLock.lock()
+        if self.activeTasks[taskId] != nil {
             print(
-                "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
+                "Current session for \(video.id) already exists, ignoring"
             )
-            callback(.failed)
+            self.stateLock.unlock()
             return
         }
+        self.stateLock.unlock()
+
+        var task: DispatchWorkItem!
+        task = DispatchWorkItem {
+            self.semaphore.wait()
+
+            defer {
+                self.stateLock.lock()
+                self.activeTasks[taskId] = nil
+                self.stateLock.unlock()
+                self.semaphore.signal()
+            }
+
+            if task.isCancelled {
+                callback(.new)
+                return
+            }
+
+            let session = FFmpegKit.execute(command)
+            guard let returnCode = session?.getReturnCode() else {
+                callback(.new)
+                return
+            }
+
+            if ReturnCode.isSuccess(returnCode) {
+                callback(.success(outputURL))
+            } else if ReturnCode.isCancel(returnCode) {
+                callback(.new)
+            } else {
+                print("FFmpeg failed: \(returnCode.description)")
+                callback(.failed)
+            }
+        }
+
+        queue.async(execute: task)
+        self.stateLock.lock()
+        self.activeTasks[taskId] = task
+        self.stateLock.unlock()
     }
 
     func executeFfprobeCommand(video: VideoFile) {
-        guard let bookmarkData = UserDefaults.standard.data(forKey: video.key)
+        guard
+            let directoryURL = accessBookmarkedFile(
+                url: video.privateURL,
+                key: video.key
+            )
         else {
-            print("no bookmark for key: \(video.key) - skipping")
+            print("Could not access: \(video.key) - skipping")
             return
         }
 
-        do {
-            var isStale = false
+        let didStartAccessing =
+            directoryURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                directoryURL.stopAccessingSecurityScopedResource()
+            }
+        }
 
-            let directoryURL = try URL(
-                resolvingBookmarkData: bookmarkData,
-                options: [],  // Empty options
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-            if isStale {
-                print(
-                    "Warning: Bookmark for key '\(video.key)' is stale. It might need to be recreated by the user."
-                )
-                UserDefaults.standard.removeObject(forKey: video.key)  // Clear stale bookmark
-                return
-            }
-            let didStartAccessing =
-                directoryURL.startAccessingSecurityScopedResource()
-            defer {
-                if didStartAccessing {
-                    directoryURL.stopAccessingSecurityScopedResource()
-                }
-            }
-
-            let session = FFprobeKit.getMediaInformation(video.privateURL.path)
-            guard let info = session?.getMediaInformation()
-            else {
-                return
-            }
-            guard let durationString = info.getDuration(),
-                let duration = Double(durationString),
-                let videoStream: StreamInformation = info.getStreams()?.first
-                    as? StreamInformation,
-                let properties = videoStream.getAllProperties(),
-                let framerate = properties["avg_frame_rate"] as? String,
-                let height = properties["height"] as? Int,
-                let width = properties["width"] as? Int
-            else {
-                return
-            }
-
-            let details = VideoDetails(
-                duration: duration,
-                height: height,
-                width: width,
-                framerate: framerate
-            )
-            video.details = details
-        } catch {
-            print(
-                "Error resolving bookmark for key '\(video.key)': \(error.localizedDescription)"
-            )
+        let session = FFprobeKit.getMediaInformation(video.privateURL.path)
+        guard let info = session?.getMediaInformation()
+        else {
             return
         }
+        guard let durationString = info.getDuration(),
+            let duration = Double(durationString),
+            let videoStream: StreamInformation = info.getStreams()?.first
+                as? StreamInformation,
+            let properties = videoStream.getAllProperties(),
+            let framerate = properties["avg_frame_rate"] as? String,
+            let height = properties["height"] as? Int,
+            let width = properties["width"] as? Int
+        else {
+            return
+        }
+
+        let details = VideoDetails(
+            duration: duration,
+            height: height,
+            width: width,
+            framerate: framerate
+        )
+        video.details = details
     }
 
     func generateThumbnail(video: VideoFile) {
@@ -335,5 +297,28 @@ enum EncoderType: String, CaseIterable, Identifiable {
         -> String
     {
         return "\(namespace)-\(uuid)\(encoder?.rawValue ?? "")"
+    }
+
+    func copyVideoToTemp(video: VideoFile) {
+        guard let bookmark = accessBookmarkedFile(
+            url: video.privateURL,
+            key: video.key
+        ) else {
+            return
+        }
+        do {
+            let tempDirectory = FileManager.default.temporaryDirectory
+            let outputPath = tempDirectory.appendingPathComponent(video.name)
+            try copyPrivateFileUsingBookmark(
+                file: video.privateURL,
+                destination: outputPath,
+                bookmark: bookmark
+            )
+            
+            video.mtsURL = outputPath
+        } catch {
+            print("Error copying video \(error.localizedDescription)")
+        }
+
     }
 }

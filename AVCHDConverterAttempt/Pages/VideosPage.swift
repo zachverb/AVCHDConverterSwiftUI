@@ -15,8 +15,6 @@ struct VideosPage: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(message)
-
             if pickedFiles.count > 0 {
                 Text(
                     "Files in \(directoryName ?? "Unknown Directory") (\(pickedFiles.count)):"
@@ -42,18 +40,14 @@ struct VideosPage: View {
                 }
             )
         }
-        .navigationBarTitle("Directory picker")
+        .navigationBarTitle(directoryName ?? "Pick a Directory")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack {
-                    Text("Pick Directory").font(.headline)
-                    Spacer()
-                    Button {
-                        showDirectoryPicker = true
-                    } label: {
-                        Image(systemName: "folder.badge.plus")
-                    }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showDirectoryPicker = true
+                } label: {
+                    Image(systemName: "folder")
                 }
             }
         }
